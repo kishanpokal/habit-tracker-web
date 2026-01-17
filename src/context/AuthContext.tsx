@@ -18,22 +18,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        // 🔹 Create user document in Firestore if it doesn't exist
-        const userRef = doc(db, "users", firebaseUser.uid);
-        const userSnap = await getDoc(userRef);
+      // ✅ SET USER IMMEDIATELY
+      setUser(firebaseUser);
 
-        if (!userSnap.exists()) {
-          await setDoc(userRef, {
-            email: firebaseUser.email,
-            provider: firebaseUser.providerData[0]?.providerId ?? "unknown",
-            createdAt: serverTimestamp(),
-          });
+      // ✅ STOP LOADING IMMEDIATELY
+      setLoading(false);
+
+      // 🔹 Firestore side-effect (NON-BLOCKING for routing)
+      if (firebaseUser) {
+        try {
+          const userRef = doc(db, "users", firebaseUser.uid);
+          const userSnap = await getDoc(userRef);
+
+          if (!userSnap.exists()) {
+            await setDoc(userRef, {
+              email: firebaseUser.email,
+              provider: firebaseUser.providerData[0]?.providerId ?? "unknown",
+              createdAt: serverTimestamp(),
+            });
+          }
+        } catch (error) {
+          console.error("Failed to create user document:", error);
         }
       }
-
-      setUser(firebaseUser);
-      setLoading(false);
     });
 
     return () => unsubscribe();

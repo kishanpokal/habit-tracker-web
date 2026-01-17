@@ -137,9 +137,12 @@ export default function DashboardPage() {
 
   /* ------------------ Auth ------------------ */
   useEffect(() => {
-    if (loading) return;
-    if (!user || !user.emailVerified) router.replace("/login");
-  }, [user, loading, router]);
+  if (loading) return;          // wait for auth hydration
+  if (!user) {
+    router.replace("/login");
+  }
+}, [user, loading, router]);
+
 
   /* ------------------ Habits ------------------ */
   useEffect(() => {

@@ -137,12 +137,11 @@ export default function DashboardPage() {
 
   /* ------------------ Auth ------------------ */
   useEffect(() => {
-  if (loading) return;          // wait for auth hydration
-  if (!user) {
-    router.replace("/login");
-  }
-}, [user, loading, router]);
-
+    if (loading) return;
+    if (!user) {
+      router.replace("/login");
+    }
+  }, [user, loading, router]);
 
   /* ------------------ Habits ------------------ */
   useEffect(() => {
@@ -236,14 +235,14 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <TopNav />
 
-      <main className="pt-24 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        {/* Header Section */}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8">
+      <main className="pt-20 pb-20 px-3 sm:px-4 md:px-6 lg:px-8 max-w-7xl mx-auto">
+        {/* Header Section - Improved Mobile */}
+        <div className="flex flex-col gap-4 mb-6">
           <div>
-            <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-2">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-2 break-words">
               Hey there, {user.email?.split("@")[0]}
             </h1>
-            <p className="text-gray-500 dark:text-gray-400">
+            <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
               {view === "week" && `${startDate} - ${endDate}`}
               {view === "month" && new Date(dateRange[0]).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
               {view === "year" && new Date(dateRange[0]).getFullYear()}
@@ -252,22 +251,25 @@ export default function DashboardPage() {
           </div>
 
           {/* Progress Info */}
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{progressPercent}%</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">of daily goal achieved</p>
+          <div className="bg-white dark:bg-gray-900 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-800">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-500 dark:text-gray-400">Progress</span>
+              <div className="text-right">
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{progressPercent}%</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">of daily goal</p>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* View Tabs & Add Button */}
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-2 bg-white dark:bg-gray-900 rounded-xl p-1.5 shadow-sm border border-gray-200 dark:border-gray-800">
+        {/* View Tabs & Add Button - Mobile Optimized */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-6">
+          <div className="flex items-center gap-1 bg-white dark:bg-gray-900 rounded-xl p-1 shadow-sm border border-gray-200 dark:border-gray-800 overflow-x-auto">
             {(["week", "month", "year", "allTime"] as ViewMode[]).map((m) => (
               <button
                 key={m}
                 onClick={() => setView(m)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
                   view === m
                     ? "bg-blue-600 text-white shadow-md"
                     : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
@@ -280,7 +282,7 @@ export default function DashboardPage() {
 
           <button
             onClick={() => setShowAddHabit(true)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all text-sm sm:text-base"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -291,17 +293,17 @@ export default function DashboardPage() {
 
         {/* Week Progress Bar */}
         {view === "week" && (
-          <div className="bg-white dark:bg-gray-900 rounded-xl p-6 mb-6 shadow-sm border border-gray-200 dark:border-gray-800">
-            <div className="flex items-center justify-between mb-3">
+          <div className="bg-white dark:bg-gray-900 rounded-xl p-4 sm:p-6 mb-6 shadow-sm border border-gray-200 dark:border-gray-800">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3">
               <div className="flex items-center gap-2">
-                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                 </svg>
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
                   {comparisonText} week before
                 </span>
               </div>
-              <span className="text-sm font-semibold text-gray-900 dark:text-white">
+              <span className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
                 {progressPercent}% achieved
               </span>
             </div>
@@ -314,67 +316,73 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Date Range Header + Layout Toggle */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <button onClick={() => navigateView(-1)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
-              <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        {/* CONTINUE TO PART 2... */}
+        {/* Date Range Header + Layout Toggle - Mobile Optimized */}
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <div className="flex items-center gap-2">
+            <button onClick={() => navigateView(-1)} className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              {view === "week" && `${startDate} - ${endDate}`}
+            <h2 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900 dark:text-white">
+              {view === "week" && (
+                <span className="hidden sm:inline">{`${startDate} - ${endDate}`}</span>
+              )}
+              {view === "week" && (
+                <span className="sm:hidden">This Week</span>
+              )}
               {view === "month" && new Date(dateRange[0]).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
               {view === "year" && new Date(dateRange[0]).getFullYear()}
               {view === "allTime" && "Last 90 Days"}
             </h2>
-            <button onClick={() => navigateView(1)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
-              <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <button onClick={() => navigateView(1)} className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </button>
           </div>
 
           {/* Layout Toggle */}
-          <div className="flex items-center gap-2 bg-white dark:bg-gray-900 rounded-lg p-1 shadow-sm border border-gray-200 dark:border-gray-800">
+          <div className="flex items-center gap-1 bg-white dark:bg-gray-900 rounded-lg p-1 shadow-sm border border-gray-200 dark:border-gray-800">
             <button
               onClick={() => setLayout("list")}
-              className={`p-2 rounded-md transition-all ${
+              className={`p-1.5 sm:p-2 rounded-md transition-all ${
                 layout === "list"
                   ? "bg-gray-200 dark:bg-gray-700"
                   : "hover:bg-gray-100 dark:hover:bg-gray-800"
               }`}
             >
-              <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
             <button
               onClick={() => setLayout("grid")}
-              className={`p-2 rounded-md transition-all ${
+              className={`p-1.5 sm:p-2 rounded-md transition-all ${
                 layout === "grid"
                   ? "bg-gray-200 dark:bg-gray-700"
                   : "hover:bg-gray-100 dark:hover:bg-gray-800"
               }`}
             >
-              <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
               </svg>
             </button>
           </div>
         </div>
 
-        {/* Main Content Area */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Content Area - Mobile Optimized */}
+        <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4 sm:gap-6">
           {/* LEFT - Habits Grid/List */}
-          <div className="lg:col-span-2 space-y-4">
+          <div className="lg:col-span-2 space-y-3 sm:space-y-4">
             {habits.length === 0 ? (
-              <div className="bg-white dark:bg-gray-900 rounded-xl p-12 text-center border-2 border-dashed border-gray-300 dark:border-gray-700">
-                <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="bg-white dark:bg-gray-900 rounded-xl p-8 sm:p-12 text-center border-2 border-dashed border-gray-300 dark:border-gray-700">
+                <svg className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No habits yet</h3>
-                <p className="text-gray-500 dark:text-gray-400 mb-6">Start building better habits by adding your first one!</p>
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-2">No habits yet</h3>
+                <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mb-6">Start building better habits by adding your first one!</p>
                 <button
                   onClick={() => setShowAddHabit(true)}
                   className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-all"
@@ -385,148 +393,155 @@ export default function DashboardPage() {
             ) : layout === "grid" ? (
               // GRID LAYOUT
               <>
-  {/* Day Headers - Show for all views */}
-  {view === "week" && (
-    <div className="flex gap-2 px-4">
-      <div className="w-32" />
-      {dateRange.map((d) => (
-        <div key={d} className="flex-1 text-center">
-          <p className="text-xs font-semibold text-gray-900 dark:text-white">{getDayName(d)}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">{new Date(d).getDate()}</p>
-        </div>
-      ))}
-      <div className="w-12" />
-    </div>
-  )}
-  {/* Month View - Show calendar grid */}
-  {view === "month" && (
-    <div className="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-800 mb-4">
-      <div className="grid grid-cols-7 gap-2">
-        {/* Day headers */}
-        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-          <div key={day} className="text-center text-xs font-semibold text-gray-600 dark:text-gray-400 pb-2">
-            {day}
-          </div>
-        ))}
-       
-        {/* Empty cells for offset */}
-        {Array.from({ length: new Date(dateRange[0]).getDay() }).map((_, i) => (
-          <div key={`empty-${i}`} />
-        ))}
-       
-        {/* Date cells */}
-        {dateRange.map((d) => {
-          const dayHabits = habits.map(h => ({
-            habit: h,
-            completed: logs[h.id]?.has(d)
-          }));
-          const completedCount = dayHabits.filter(h => h.completed).length;
-         
-          return (
-            <div key={d} className="aspect-square">
-              <div className={`w-full h-full rounded-lg border-2 p-1 ${
-                d === today
-                  ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                  : "border-gray-200 dark:border-gray-700"
-              }`}>
-                <div className="text-xs font-medium text-gray-900 dark:text-white mb-1">
-                  {new Date(d).getDate()}
-                </div>
-                <div className="flex gap-0.5 flex-wrap">
-                  {dayHabits.map(({ habit, completed }) => (
+                {/* Week View */}
+                {view === "week" && (
+                  <>
+                    {/* Day Headers - Hidden on small mobile, visible on larger screens */}
+                    <div className="hidden sm:flex gap-2 px-2 sm:px-4">
+                      <div className="w-24 sm:w-32" />
+                      {dateRange.map((d) => (
+                        <div key={d} className="flex-1 text-center min-w-0">
+                          <p className="text-xs font-semibold text-gray-900 dark:text-white truncate">{getDayName(d)}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{new Date(d).getDate()}</p>
+                        </div>
+                      ))}
+                      <div className="w-10 sm:w-12" />
+                    </div>
+
+                    {/* Habit Rows */}
+                    {habits.map((h) => {
+                      const completedCount = dateRange.filter((d) => logs[h.id]?.has(d)).length;
+                      return (
+                        <div
+                          key={h.id}
+                          className="bg-white dark:bg-gray-900 rounded-xl p-3 sm:p-4 shadow-sm border border-gray-200 dark:border-gray-800 hover:shadow-md transition-all"
+                        >
+                          <div className="flex items-center gap-2">
+                            {/* Habit Name */}
+                            <div className="w-24 sm:w-32 flex items-center gap-2 min-w-0">
+                              <div className="w-1 h-6 sm:h-8 rounded-full flex-shrink-0" style={{ backgroundColor: h.color }} />
+                              <span className="font-medium text-gray-900 dark:text-white text-xs sm:text-sm truncate">{h.name}</span>
+                            </div>
+                            {/* Day Checkboxes */}
+                            <div className="flex-1 flex gap-1 sm:gap-2 overflow-x-auto">
+                              {dateRange.map((d) => {
+                                const done = logs[h.id]?.has(d);
+                                const isToday = d === today;
+                                return (
+                                  <button
+                                    key={d}
+                                    onClick={() => toggleHabit(h.id, d, !done)}
+                                    className={`flex-1 min-w-[32px] h-8 sm:h-10 rounded-lg transition-all ${
+                                      done
+                                        ? "opacity-100 shadow-sm"
+                                        : "opacity-30 hover:opacity-60 border-2 border-dashed border-gray-300 dark:border-gray-700"
+                                    } ${isToday ? "ring-2 ring-blue-500 ring-offset-1" : ""}`}
+                                    style={{ backgroundColor: done ? h.color : "transparent" }}
+                                  />
+                                );
+                              })}
+                            </div>
+                            {/* Count */}
+                            <div className="w-10 sm:w-12 text-center flex-shrink-0">
+                              <span className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
+                                {completedCount}/{dateRange.length}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </>
+                )}
+
+                {/* Month View */}
+                {view === "month" && (
+                  <div className="bg-white dark:bg-gray-900 rounded-xl p-3 sm:p-6 shadow-sm border border-gray-200 dark:border-gray-800 mb-4">
+                    <div className="grid grid-cols-7 gap-1 sm:gap-2">
+                      {/* Day headers */}
+                      {["S", "M", "T", "W", "T", "F", "S"].map((day, i) => (
+                        <div key={i} className="text-center text-xs font-semibold text-gray-600 dark:text-gray-400 pb-2">
+                          <span className="hidden sm:inline">{["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][i]}</span>
+                          <span className="sm:hidden">{day}</span>
+                        </div>
+                      ))}
+                     
+                      {/* Empty cells for offset */}
+                      {Array.from({ length: new Date(dateRange[0]).getDay() }).map((_, i) => (
+                        <div key={`empty-${i}`} />
+                      ))}
+                     
+                      {/* Date cells */}
+                      {dateRange.map((d) => {
+                        const dayHabits = habits.map(h => ({
+                          habit: h,
+                          completed: logs[h.id]?.has(d)
+                        }));
+                        const completedCount = dayHabits.filter(h => h.completed).length;
+                       
+                        return (
+                          <div key={d} className="aspect-square">
+                            <div className={`w-full h-full rounded-lg border-2 p-1 ${
+                              d === today
+                                ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                                : "border-gray-200 dark:border-gray-700"
+                            }`}>
+                              <div className="text-xs font-medium text-gray-900 dark:text-white mb-1">
+                                {new Date(d).getDate()}
+                              </div>
+                              <div className="flex gap-0.5 flex-wrap">
+                                {dayHabits.map(({ habit, completed }) => (
+                                  <div
+                                    key={habit.id}
+                                    className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-sm ${completed ? "opacity-100" : "opacity-20"}`}
+                                    style={{ backgroundColor: habit.color }}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Year/All Time - Heatmap */}
+                {(view === "year" || view === "allTime") && habits.map((h) => {
+                  const completedCount = dateRange.filter((d) => logs[h.id]?.has(d)).length;
+                  return (
                     <div
-                      key={habit.id}
-                      className={`w-2 h-2 rounded-sm ${completed ? "opacity-100" : "opacity-20"}`}
-                      style={{ backgroundColor: habit.color }}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  )}
-  {/* Habit Rows - Week View */}
-  {view === "week" && habits.map((h) => {
-    const completedCount = dateRange.filter((d) => logs[h.id]?.has(d)).length;
-    return (
-      <div
-        key={h.id}
-        className="bg-white dark:bg-gray-900 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-800 hover:shadow-md transition-all"
-      >
-        <div className="flex items-center gap-2">
-          {/* Habit Name */}
-          <div className="w-32 flex items-center gap-2">
-            <div className="w-1 h-8 rounded-full" style={{ backgroundColor: h.color }} />
-            <span className="font-medium text-gray-900 dark:text-white text-sm truncate">{h.name}</span>
-          </div>
-          {/* Day Checkboxes */}
-          <div className="flex-1 flex gap-2">
-            {dateRange.map((d) => {
-              const done = logs[h.id]?.has(d);
-              const isToday = d === today;
-              return (
-                <button
-                  key={d}
-                  onClick={() => toggleHabit(h.id, d, !done)}
-                  className={`flex-1 h-10 rounded-lg transition-all ${
-                    done
-                      ? "opacity-100 shadow-sm"
-                      : "opacity-30 hover:opacity-60 border-2 border-dashed border-gray-300 dark:border-gray-700"
-                  } ${isToday ? "ring-2 ring-blue-500 ring-offset-2" : ""}`}
-                  style={{ backgroundColor: done ? h.color : "transparent" }}
-                />
-              );
-            })}
-          </div>
-          {/* Count */}
-          <div className="w-12 text-center">
-            <span className="text-sm font-semibold text-gray-900 dark:text-white">
-              {completedCount}/{dateRange.length}
-            </span>
-          </div>
-        </div>
-      </div>
-    );
-  })}
-  {/* Year/All Time - Heatmap style per habit */}
-  {(view === "year" || view === "allTime") && habits.map((h) => {
-    const completedCount = dateRange.filter((d) => logs[h.id]?.has(d)).length;
-    return (
-      <div
-        key={h.id}
-        className="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-800 hover:shadow-md transition-all"
-      >
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-1 h-8 rounded-full" style={{ backgroundColor: h.color }} />
-            <span className="font-semibold text-gray-900 dark:text-white">{h.name}</span>
-          </div>
-          <span className="text-sm text-gray-500 dark:text-gray-400">
-            {completedCount}/{dateRange.length} completed
-          </span>
-        </div>
-        <div className="flex gap-1 flex-wrap">
-          {dateRange.map((d) => {
-            const done = logs[h.id]?.has(d);
-            return (
-              <div
-                key={d}
-                className={`w-3 h-3 rounded-sm transition-all ${
-                  done ? "opacity-100" : "opacity-20"
-                }`}
-                style={{ backgroundColor: h.color }}
-                title={`${d}: ${done ? 'Completed' : 'Not completed'}`}
-              />
-            );
-          })}
-        </div>
-      </div>
-    );
-  })}
-</>
+                      key={h.id}
+                      className="bg-white dark:bg-gray-900 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200 dark:border-gray-800 hover:shadow-md transition-all"
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                          <div className="w-1 h-6 sm:h-8 rounded-full flex-shrink-0" style={{ backgroundColor: h.color }} />
+                          <span className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white truncate">{h.name}</span>
+                        </div>
+                        <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap ml-2">
+                          {completedCount}/{dateRange.length}
+                        </span>
+                      </div>
+                      <div className="flex gap-0.5 sm:gap-1 flex-wrap">
+                        {dateRange.map((d) => {
+                          const done = logs[h.id]?.has(d);
+                          return (
+                            <div
+                              key={d}
+                              className={`w-2 h-2 sm:w-3 sm:h-3 rounded-sm transition-all ${
+                                done ? "opacity-100" : "opacity-20"
+                              }`}
+                              style={{ backgroundColor: h.color }}
+                              title={`${d}: ${done ? 'Completed' : 'Not completed'}`}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </>
             ) : (
               // LIST LAYOUT
               habits.map((h) => {
@@ -534,24 +549,24 @@ export default function DashboardPage() {
                 return (
                   <div
                     key={h.id}
-                    className="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-800 hover:shadow-md transition-all"
+                    className="bg-white dark:bg-gray-900 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200 dark:border-gray-800 hover:shadow-md transition-all"
                   >
                     <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-1 h-8 rounded-full" style={{ backgroundColor: h.color }} />
-                        <span className="font-semibold text-gray-900 dark:text-white">{h.name}</span>
+                      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                        <div className="w-1 h-6 sm:h-8 rounded-full flex-shrink-0" style={{ backgroundColor: h.color }} />
+                        <span className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white truncate">{h.name}</span>
                       </div>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
-                        {completedCount}/{dateRange.length} completed
+                      <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap ml-2">
+                        {completedCount}/{dateRange.length}
                       </span>
                     </div>
-                    <div className="flex gap-1 flex-wrap">
+                    <div className="flex gap-0.5 sm:gap-1 flex-wrap">
                       {dateRange.map((d) => {
                         const done = logs[h.id]?.has(d);
                         return (
                           <div
                             key={d}
-                            className={`w-3 h-3 rounded-sm transition-all ${
+                            className={`w-2 h-2 sm:w-3 sm:h-3 rounded-sm transition-all ${
                               done ? "opacity-100" : "opacity-20"
                             }`}
                             style={{ backgroundColor: h.color }}
@@ -568,9 +583,9 @@ export default function DashboardPage() {
           {/* RIGHT - Daily Habits */}
           <div className="space-y-4">
             {/* Daily Card */}
-            <div className="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-800 sticky top-24">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+            <div className="bg-white dark:bg-gray-900 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200 dark:border-gray-800 lg:sticky lg:top-24">
+              <div className="flex items-center justify-between mb-4 sm:mb-6">
+                <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
                   {formatDate(selectedDate)}
                 </h2>
                 <div className="flex gap-1">
@@ -587,56 +602,56 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-4 sm:mb-6">
                 {habits.filter((h) => logs[h.id]?.has(selectedDate)).length}/{habits.length} of daily goal achieved
               </p>
 
               {/* Daily Habit List */}
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 {habits.length === 0 ? (
-                  <p className="text-center text-gray-400 dark:text-gray-500 py-8">No habits to track</p>
+                  <p className="text-center text-gray-400 dark:text-gray-500 py-8 text-sm">No habits to track</p>
                 ) : (
                   habits.map((h) => {
                     const done = logs[h.id]?.has(selectedDate);
                     return (
                       <div
                         key={h.id}
-                        className={`rounded-xl p-4 transition-all cursor-pointer border-2 ${
+                        className={`rounded-xl p-3 sm:p-4 transition-all cursor-pointer border-2 ${
                           done
                             ? "border-transparent shadow-md"
                             : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
                         }`}
                         style={{ backgroundColor: done ? h.color : "transparent" }}
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                             {done ? (
-                              <svg className="w-5 h-5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                               </svg>
                             ) : (
-                              <div className="w-5 h-5 rounded-full border-2 border-gray-400 dark:border-gray-500 flex-shrink-0" />
+                              <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 border-gray-400 dark:border-gray-500 flex-shrink-0" />
                             )}
-                            <span className={`font-medium ${done ? "text-white" : "text-gray-900 dark:text-white"}`}>
+                            <span className={`font-medium text-sm sm:text-base truncate ${done ? "text-white" : "text-gray-900 dark:text-white"}`}>
                               {h.name}
                             </span>
                           </div>
                           <button
                             onClick={() => toggleHabit(h.id, selectedDate, !done)}
-                            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                            className={`px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
                               done
                                 ? "bg-white/20 hover:bg-white/30 text-white"
                                 : "bg-blue-600 hover:bg-blue-700 text-white"
                             }`}
                           >
-                            {done ? "Undo" : "Mark Complete"}
+                            {done ? "Undo" : "Mark"}
                           </button>
                         </div>
 
                         {/* Streak indicator */}
                         {getStreak(h.id, selectedDate) > 0 && (
                           <div className="mt-2 flex items-center gap-1">
-                            <svg className={`w-4 h-4 ${done ? "text-white" : "text-orange-500"}`} fill="currentColor" viewBox="0 0 20 20">
+                            <svg className={`w-3 h-3 sm:w-4 sm:h-4 ${done ? "text-white" : "text-orange-500"}`} fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clipRule="evenodd" />
                             </svg>
                             <span className={`text-xs font-semibold ${done ? "text-white" : "text-gray-600 dark:text-gray-400"}`}>

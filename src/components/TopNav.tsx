@@ -26,26 +26,26 @@ export default function TopNav() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50">
       {/* Glassmorphic container with blur */}
-      <div className="mx-4 mt-4 rounded-2xl bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl border border-white/20 dark:border-gray-700/30 shadow-lg shadow-black/5">
-        <div className="mx-auto max-w-7xl px-6 py-4">
+      <div className="mx-2 sm:mx-4 mt-2 sm:mt-4 rounded-2xl bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl border border-white/20 dark:border-gray-700/30 shadow-lg shadow-black/5">
+        <div className="mx-auto max-w-7xl px-3 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             {/* LEFT — Brand */}
             <Link
               href="/dashboard"
-              className="flex items-center gap-3 group"
+              className="flex items-center gap-2 sm:gap-3 group"
             >
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center shadow-lg group-hover:shadow-xl group-hover:scale-105 transition-all">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center shadow-lg group-hover:shadow-xl group-hover:scale-105 transition-all">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <span className="text-base sm:text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent hidden xs:block">
                 Habit Tracker
               </span>
             </Link>
 
             {/* CENTER — Navigation (Desktop) */}
-            <nav className="hidden md:flex items-center gap-2 bg-gray-100/50 dark:bg-gray-800/50 rounded-xl p-1.5 backdrop-blur-sm">
+            <nav className="hidden lg:flex items-center gap-2 bg-gray-100/50 dark:bg-gray-800/50 rounded-xl p-1.5 backdrop-blur-sm">
               {navItems.map((item) =>
                 item.enabled ? (
                   <Link
@@ -75,10 +75,10 @@ export default function TopNav() {
             </nav>
 
             {/* RIGHT — User actions */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               {/* User avatar (optional) */}
-              <div className="hidden sm:flex items-center gap-3 px-3 py-2 rounded-xl bg-gray-100/50 dark:bg-gray-800/50">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-sm font-semibold shadow-md">
+              <div className="hidden sm:flex items-center gap-3 px-2 sm:px-3 py-2 rounded-xl bg-gray-100/50 dark:bg-gray-800/50">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs sm:text-sm font-semibold shadow-md">
                   U
                 </div>
               </div>
@@ -86,13 +86,13 @@ export default function TopNav() {
               {/* Logout button */}
               <button
                 onClick={handleLogout}
-                className="group relative px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-500 to-pink-500 text-white font-semibold shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all overflow-hidden"
+                className="group relative px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs sm:text-sm font-semibold shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all overflow-hidden"
               >
-                <span className="relative z-10 flex items-center gap-2">
+                <span className="relative z-10 flex items-center gap-1 sm:gap-2">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                   </svg>
-                  Logout
+                  <span className="hidden xs:inline">Logout</span>
                 </span>
                 <div className="absolute inset-0 bg-gradient-to-r from-pink-500 to-red-500 opacity-0 group-hover:opacity-100 transition-opacity" />
               </button>
@@ -100,9 +100,9 @@ export default function TopNav() {
               {/* Mobile menu button */}
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="md:hidden p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                className="lg:hidden p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
               >
-                <svg className="w-6 h-6 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   {isMenuOpen ? (
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   ) : (
@@ -115,7 +115,7 @@ export default function TopNav() {
 
           {/* Mobile Navigation */}
           {isMenuOpen && (
-            <nav className="md:hidden mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 animate-slide-down">
+            <nav className="lg:hidden mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-200 dark:border-gray-700 animate-slide-down">
               <div className="flex flex-col gap-2">
                 {navItems.map((item) =>
                   item.enabled ? (
@@ -123,7 +123,7 @@ export default function TopNav() {
                       key={item.name}
                       href={item.href}
                       onClick={() => setIsMenuOpen(false)}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                      className={`flex items-center gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl text-sm font-medium transition-all ${
                         pathname === item.href
                           ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg"
                           : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
@@ -143,7 +143,7 @@ export default function TopNav() {
       </div>
 
       {/* Spacer to prevent content from hiding under fixed nav */}
-      <div className="h-20" />
+      <div className="h-16 sm:h-20" />
 
       <style jsx>{`
         @keyframes slide-down {
@@ -159,6 +159,16 @@ export default function TopNav() {
 
         .animate-slide-down {
           animation: slide-down 0.3s ease-out;
+        }
+
+        /* Extra small breakpoint for very small phones */
+        @media (min-width: 375px) {
+          .xs\:block {
+            display: block;
+          }
+          .xs\:inline {
+            display: inline;
+          }
         }
       `}</style>
     </header>

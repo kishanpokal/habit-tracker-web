@@ -11,11 +11,6 @@ import {
   AreaChart, Area, RadarChart, PolarGrid, PolarAngleAxis,
   PolarRadiusAxis, Radar,
 } from "recharts";
-import {
-  TrendingUp, Award, Target, Calendar, Download, Activity,
-  BarChart3, PieChart as PieChartIcon, Flame,
-  CheckCircle2, Zap
-} from "lucide-react";
 
 /* -------------------- Types -------------------- */
 type Habit = {
@@ -92,79 +87,53 @@ const COLORS = [
   "#14b8a6", "#f43f5e", "#a855f7", "#059669"
 ];
 
-// Fixed export function - converts to canvas properly
-const exportChartAsPNG = async (elementId: string, filename: string) => {
-  const element = document.getElementById(elementId);
-  if (!element) {
-    console.error("Element not found:", elementId);
-    return;
-  }
-
-  try {
-    // Dynamic import to avoid SSR issues
-    // @ts-ignore
-    const domToImage = (await import("dom-to-image-more")).default;
-
-    const dataUrl = await domToImage.toPng(element, {
-      bgcolor: "#1f2937",
-      scale: 2,
-    });
-
-    const link = document.createElement("a");
-    link.download = `${filename}-${new Date().toISOString().split('T')[0]}.png`;
-    link.href = dataUrl;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  } catch (error) {
-    console.error("Error exporting chart:", error);
-  }
-};
-
 /* -------------------- UI Components -------------------- */
 function StatCard({
   icon,
   title,
   value,
   subtitle,
-  color = "blue",
+  gradient,
   trend,
 }: {
   icon: React.ReactNode;
   title: string;
   value: string | number;
   subtitle?: string;
-  color?: string;
+  gradient: string;
   trend?: string;
 }) {
-  const colorGradients = {
-    blue: "linear-gradient(to bottom right, #3b82f6, #2563eb)",
-    green: "linear-gradient(to bottom right, #10b981, #059669)",
-    orange: "linear-gradient(to bottom right, #f59e0b, #d97706)",
-    purple: "linear-gradient(to bottom right, #a855f7, #9333ea)",
-    indigo: "linear-gradient(to bottom right, #6366f1, #4f46e5)",
-  };
-
   return (
-    <div className="rounded-xl sm:rounded-2xl shadow-xl border p-3 sm:p-4 lg:p-6 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 group" style={{ backgroundColor: "rgba(31, 41, 55, 0.5)", backdropFilter: "blur(12px)", borderColor: "#374151" }}>
+    <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 sm:p-5 lg:p-6 shadow-sm border border-gray-200 dark:border-gray-800 hover:shadow-xl transition-all duration-300 group">
       <div className="flex items-start justify-between mb-3 sm:mb-4">
-        <div className="p-2 sm:p-2.5 lg:p-3 rounded-lg sm:rounded-xl text-white shadow-lg" style={{ background: colorGradients[color as keyof typeof colorGradients] }}>
+        <div 
+          className="p-2.5 sm:p-3 rounded-xl shadow-lg text-white"
+          style={{ background: gradient }}
+        >
           {icon}
         </div>
         {trend && (
-          <span className="text-xs text-green-400 font-semibold flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-lg border" style={{ backgroundColor: "rgba(16, 185, 129, 0.1)", borderColor: "rgba(16, 185, 129, 0.2)" }}>
-            <TrendingUp className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-            <span className="hidden sm:inline">{trend}</span>
-          </span>
+          <div className="flex items-center gap-1 px-2 py-1 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+            <svg className="w-3 h-3 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            </svg>
+            <span className="text-xs font-semibold text-green-600 dark:text-green-400">{trend}</span>
+          </div>
         )}
       </div>
       <div>
-        <p className="text-xs sm:text-sm text-gray-400 mb-1 sm:mb-2 font-medium truncate">{title}</p>
-        <div className="flex items-baseline gap-1 sm:gap-2">
-          <p className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-gray-100 group-hover:text-blue-400 transition-colors">
+        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-1 font-medium truncate">
+          {title}
+        </p>
+        <div className="flex items-baseline gap-2">
+          <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white group-hover:scale-105 transition-transform">
             {value}
           </p>
-          {subtitle && <span className="text-xs sm:text-sm text-gray-500 font-medium">{subtitle}</span>}
+          {subtitle && (
+            <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">
+              {subtitle}
+            </span>
+          )}
         </div>
       </div>
     </div>
@@ -172,42 +141,30 @@ function StatCard({
 }
 
 function ChartCard({
-  id,
   title,
   icon,
   children,
-  onExport,
 }: {
-  id: string;
   title: string;
   icon: React.ReactNode;
   children: React.ReactNode;
-  onExport: () => void;
 }) {
   return (
-    <div
-      id={id}
-      className="rounded-xl sm:rounded-2xl shadow-xl border p-4 sm:p-6 hover:shadow-2xl transition-all duration-300"
-      style={{ backgroundColor: "rgba(31, 41, 55, 0.5)", backdropFilter: "blur(12px)", borderColor: "#374151" }}
-    >
-      <div className="flex items-center justify-between mb-4 sm:mb-6 flex-col sm:flex-row gap-3">
-        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
-          <div className="p-1.5 sm:p-2 text-white rounded-lg shadow-lg flex-shrink-0" style={{ background: "linear-gradient(to bottom right, #3b82f6, #9333ea)" }}>
-            {icon}
-          </div>
-          <h2 className="text-sm sm:text-base lg:text-lg font-bold text-gray-100 truncate">{title}</h2>
-        </div>
-        <button
-          onClick={onExport}
-          className="group flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-gray-300 rounded-xl transition-all duration-300 border shadow-sm hover:shadow-lg w-full sm:w-auto justify-center"
-          style={{ backgroundColor: "rgba(55, 65, 81, 0.5)", borderColor: "#4b5563" }}
-          title="Export as PNG"
+    <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-200 dark:border-gray-800 hover:shadow-lg transition-all duration-300">
+      <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+        <div 
+          className="p-2 sm:p-2.5 rounded-xl shadow-lg text-white"
+          style={{ background: "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)" }}
         >
-          <Download className="w-3 h-3 sm:w-4 sm:h-4 group-hover:animate-bounce" />
-          <span>Export</span>
-        </button>
+          {icon}
+        </div>
+        <h2 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 dark:text-white">
+          {title}
+        </h2>
       </div>
-      <div className="chart-container overflow-x-auto">{children}</div>
+      <div className="overflow-x-auto">
+        {children}
+      </div>
     </div>
   );
 }
@@ -252,15 +209,8 @@ export default function AnalyticsPage() {
     const totalCompleted = completedInRange;
     const avgDaily = daysInRange > 0 ? Math.round(completedInRange / daysInRange) : 0;
 
-    console.log('Computed stats:', { completionRate, currentStreak, bestStreak, totalCompleted, avgDaily }); // Debug log
-
     return { completionRate, currentStreak, bestStreak, totalCompleted, avgDaily };
-  }, [habits, logs, timeRange, rangeDays]);
-
-  useEffect(() => {
-    console.log('Time range changed to:', timeRange);
-    console.log('Range days length:', rangeDays.length);
-  }, [timeRange, rangeDays]);
+  }, [habits, logs, rangeDays]);
 
   const performanceData = useMemo(() => {
     return rangeDays.map((d) => {
@@ -269,7 +219,7 @@ export default function AnalyticsPage() {
       const completed = logs.filter((l) => l.date === d && l.completed).length;
       const total = habits.length;
       return {
-        name: timeRange === "7d" ? `${dayName} ${d.slice(5)}` : d.slice(5),
+        name: timeRange === "7d" ? `${dayName} ${d.slice(8)}` : d.slice(5),
         completed,
         total,
         percentage: total > 0 ? Math.round((completed / total) * 100) : 0,
@@ -277,13 +227,12 @@ export default function AnalyticsPage() {
     });
   }, [logs, habits, timeRange, rangeDays]);
 
-  const monthlyData = useMemo(() => {
+  const trendData = useMemo(() => {
     return rangeDays.map((d) => ({
       date: d.slice(5),
       completed: logs.filter((l) => l.date === d && l.completed).length,
-      total: habits.length,
     }));
-  }, [logs, habits, rangeDays, timeRange]);
+  }, [logs, rangeDays]);
 
   const habitBreakdown = useMemo(() => {
     const daysInRange = rangeDays.length;
@@ -294,7 +243,7 @@ export default function AnalyticsPage() {
       const habitCompletedDates = logs.filter(l => l.habitId === h.id && l.completed).map(l => l.date);
       const streak = calculateStreak(habitCompletedDates, rangeDays);
       return {
-        name: h.name.length > 15 ? h.name.slice(0, 15) + "..." : h.name,
+        name: h.name.length > 20 ? h.name.slice(0, 20) + "..." : h.name,
         fullName: h.name,
         completed: done,
         percent: Math.round((done / total) * 100),
@@ -302,20 +251,7 @@ export default function AnalyticsPage() {
         streak,
       };
     }).sort((a, b) => b.percent - a.percent);
-  }, [habits, logs, timeRange, rangeDays]);
-
-  const habitsOverTimeData = useMemo(() => {
-    return rangeDays.map((d) => {
-      const dataPoint: any = { date: d.slice(5) };
-      habits.forEach((h) => {
-        const completed = logs.some(
-          (l) => l.habitId === h.id && l.date === d && l.completed
-        );
-        dataPoint[h.name] = completed ? 1 : 0;
-      });
-      return dataPoint;
-    });
-  }, [habits, logs, timeRange, rangeDays]);
+  }, [habits, logs, rangeDays]);
 
   const pieData = useMemo(() => {
     return habitBreakdown.map((h) => ({
@@ -352,18 +288,16 @@ export default function AnalyticsPage() {
       return {
         day,
         rate: total > 0 ? Math.round((completed / total) * 100) : 0,
-        completed,
-        total,
       };
     });
-  }, [logs, habits, timeRange, rangeDays]);
+  }, [logs, habits, rangeDays]);
 
   if (!user || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(to bottom right, #111827, #1f2937, #111827)" }}>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 flex items-center justify-center">
         <div className="text-center px-4">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-4 border-blue-500 border-t-transparent mb-4" style={{ borderColor: "rgba(59, 130, 246, 0.3)", borderTopColor: "#3b82f6" }}></div>
-          <p className="text-gray-300 font-medium text-sm sm:text-base">Loading analytics...</p>
+          <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-300 font-medium text-base sm:text-lg">Loading analytics...</p>
         </div>
       </div>
     );
@@ -373,17 +307,27 @@ export default function AnalyticsPage() {
     return (
       <>
         <TopNav />
-        <main className="min-h-screen pt-24 sm:pt-32 lg:pt-40 px-3 sm:px-4 pb-12" style={{ background: "linear-gradient(to bottom right, #111827, #1f2937, #111827)" }}>
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center py-12 sm:py-20 rounded-2xl shadow-2xl border" style={{ backgroundColor: "rgba(31, 41, 55, 0.5)", backdropFilter: "blur(12px)", borderColor: "#374151" }}>
-              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center mx-auto mb-6" style={{ backgroundColor: "rgba(59, 130, 246, 0.1)" }}>
-                <Activity className="w-10 h-10 sm:w-12 sm:h-12 text-blue-400" />
+        <main className="min-h-screen pt-20 sm:pt-24 px-4 sm:px-6 lg:px-8 pb-12 bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center py-16 sm:py-24 bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-800">
+              <div className="inline-flex p-6 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 rounded-full mb-6">
+                <svg className="w-16 h-16 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
               </div>
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-100 mb-3 px-4">No Habits to Analyze</h2>
-              <p className="text-sm sm:text-base text-gray-400 mb-8 max-w-md mx-auto px-4">
-                Start creating habits to unlock powerful insights and track your progress over time.
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-3">
+                No Analytics Yet
+              </h2>
+              <p className="text-base sm:text-lg text-gray-500 dark:text-gray-400 mb-8 max-w-md mx-auto px-4">
+                Start creating habits to unlock powerful insights and visualize your progress!
               </p>
-              <button className="px-5 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base text-white rounded-lg font-medium transition-all shadow-lg" style={{ background: "linear-gradient(to right, #3b82f6, #9333ea)" }}>
+              <button 
+                onClick={() => window.location.href = '/dashboard'}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
                 Create Your First Habit
               </button>
             </div>
@@ -397,50 +341,39 @@ export default function AnalyticsPage() {
   return (
     <>
       <TopNav />
-      <main className="min-h-screen pt-24 sm:pt-32 lg:pt-40 px-3 sm:px-4 lg:px-6 pb-12 sm:pb-20" style={{ background: "linear-gradient(to bottom right, #111827, #1f2937, #111827)" }}>
-        <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
-          {/* Header */}
-          <header className="space-y-3">
-            <div className="flex items-start sm:items-center justify-between flex-col sm:flex-row gap-4">
+      <main className="min-h-screen pt-20 sm:pt-24 px-4 sm:px-6 lg:px-8 pb-12 sm:pb-20 bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+        <div className="max-w-[1600px] mx-auto space-y-6 sm:space-y-8">
+          {/* ==================== HEADER ==================== */}
+          <header className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold mb-2" style={{
-                  background: "linear-gradient(to right, #60a5fa, #a78bfa, #f9a8d4)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text"
-                }}>
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
                   Analytics Dashboard
                 </h1>
-                <p className="text-gray-400 text-sm sm:text-base lg:text-lg">
-                  Track your progress and insights across all habits
+                <p className="text-sm sm:text-base lg:text-lg text-gray-600 dark:text-gray-400">
+                  Track your progress and gain insights across all habits
                 </p>
               </div>
-              <div className="flex items-center gap-2 rounded-lg shadow-lg border p-1 w-full sm:w-auto" style={{ backgroundColor: "rgba(31, 41, 55, 0.8)", backdropFilter: "blur(12px)", borderColor: "#374151", zIndex: 10 }}>
+              
+              {/* Time Range Toggle */}
+              <div className="flex items-center gap-2 bg-white dark:bg-gray-900 rounded-xl p-1.5 shadow-sm border border-gray-200 dark:border-gray-800 w-full sm:w-auto">
                 <button
-                  onClick={() => {
-                    console.log('Button clicked: Set to 7d');
-                    setTimeRange("7d");
-                  }}
-                  className="flex-1 sm:flex-none px-4 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-all"
-                  style={{
-                    background: timeRange === "7d" ? "linear-gradient(to right, #3b82f6, #9333ea)" : "transparent",
-                    color: timeRange === "7d" ? "#fff" : "#9ca3af",
-                    boxShadow: timeRange === "7d" ? "0 4px 6px -1px rgba(0, 0, 0, 0.1)" : "none"
-                  }}
+                  onClick={() => setTimeRange("7d")}
+                  className={`flex-1 sm:flex-none px-4 sm:px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                    timeRange === "7d"
+                      ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md"
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                  }`}
                 >
                   7 Days
                 </button>
                 <button
-                  onClick={() => {
-                    console.log('Button clicked: Set to 30d');
-                    setTimeRange("30d");
-                  }}
-                  className="flex-1 sm:flex-none px-4 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-all"
-                  style={{
-                    background: timeRange === "30d" ? "linear-gradient(to right, #3b82f6, #9333ea)" : "transparent",
-                    color: timeRange === "30d" ? "#fff" : "#9ca3af",
-                    boxShadow: timeRange === "30d" ? "0 4px 6px -1px rgba(0, 0, 0, 0.1)" : "none"
-                  }}
+                  onClick={() => setTimeRange("30d")}
+                  className={`flex-1 sm:flex-none px-4 sm:px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                    timeRange === "30d"
+                      ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md"
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                  }`}
                 >
                   30 Days
                 </button>
@@ -448,94 +381,126 @@ export default function AnalyticsPage() {
             </div>
           </header>
 
-          {/* Stats Grid */}
+          {/* ==================== STATS GRID ==================== */}
           <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
             <StatCard
-              icon={<Target className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" />}
+              icon={
+                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              }
               title="Total Habits"
               value={habits.length}
-              color="blue"
-              trend="+12%"
+              gradient="linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)"
             />
             <StatCard
-              icon={<TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" />}
+              icon={
+                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+              }
               title="Completion Rate"
               value={`${stats.completionRate}%`}
-              color="green"
+              gradient="linear-gradient(135deg, #10b981 0%, #059669 100%)"
               trend="+5%"
             />
             <StatCard
-              icon={<Flame className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" />}
+              icon={
+                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clipRule="evenodd" />
+                </svg>
+              }
               title="Current Streak"
-              value={`${stats.currentStreak}`}
+              value={stats.currentStreak}
               subtitle="days"
-              color="orange"
+              gradient="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
             />
             <StatCard
-              icon={<Award className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" />}
+              icon={
+                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                </svg>
+              }
               title="Best Streak"
-              value={`${stats.bestStreak}`}
+              value={stats.bestStreak}
               subtitle="days"
-              color="purple"
+              gradient="linear-gradient(135deg, #a855f7 0%, #9333ea 100%)"
             />
             <StatCard
-              icon={<CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" />}
+              icon={
+                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                </svg>
+              }
               title="Avg. Daily"
-              value={`${stats.avgDaily}`}
+              value={stats.avgDaily}
               subtitle="habits"
-              color="indigo"
+              gradient="linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)"
             />
           </section>
 
-          {/* Top Charts Grid */}
-          <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
+          {/* ==================== CHARTS GRID ==================== */}
+          <div className="grid lg:grid-cols-2 gap-6">
+            {/* Daily Performance Chart */}
             <ChartCard
-              id="weekly-chart"
-              title="Daily Performance Overview"
-              icon={<BarChart3 className="w-4 h-4 sm:w-5 sm:h-5" />}
-              onExport={() => exportChartAsPNG("weekly-chart", "daily-performance")}
+              title="Daily Performance"
+              icon={
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              }
             >
-              <ResponsiveContainer width="100%" height={250} className="sm:!h-[280px] lg:!h-[300px]">
+              <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={performanceData}>
                   <defs>
                     <linearGradient id="completedGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#3b82f6" stopOpacity={1} />
-                      <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.6} />
+                      <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.7} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="dark:stroke-gray-700" />
                   <XAxis
                     dataKey="name"
-                    tick={{ fill: "#9ca3af", fontSize: timeRange === "7d" ? 10 : 8 }}
-                    interval={timeRange === "7d" ? 0 : 3}
+                    tick={{ fill: "#6b7280", fontSize: 11 }}
+                    interval={timeRange === "7d" ? 0 : 4}
                     angle={-45}
                     textAnchor="end"
-                    height={60}
+                    height={70}
                   />
-                  <YAxis allowDecimals={false} tick={{ fill: "#9ca3af", fontSize: 10 }} />
+                  <YAxis 
+                    allowDecimals={false} 
+                    tick={{ fill: "#6b7280", fontSize: 11 }}
+                  />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "#1f2937",
-                      border: "1px solid #374151",
+                      backgroundColor: "rgba(255, 255, 255, 0.95)",
+                      border: "1px solid #e5e7eb",
                       borderRadius: "12px",
-                      color: "#fff",
-                      fontSize: "12px"
+                      fontSize: "12px",
                     }}
                   />
-                  <Legend wrapperStyle={{ color: "#9ca3af", fontSize: "12px" }} />
-                  <Bar dataKey="completed" fill="url(#completedGradient)" radius={[8, 8, 0, 0]} name="Completed" />
-                  <Bar dataKey="total" fill="#374151" radius={[8, 8, 0, 0]} name="Total" />
+                  <Legend wrapperStyle={{ fontSize: "12px" }} />
+                  <Bar 
+                    dataKey="completed" 
+                    fill="url(#completedGradient)" 
+                    radius={[8, 8, 0, 0]} 
+                    name="Completed"
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </ChartCard>
 
+            {/* Habit Distribution Pie */}
             <ChartCard
-              id="pie-chart"
-              title="Habit Completion Distribution"
-              icon={<PieChartIcon className="w-4 h-4 sm:w-5 sm:h-5" />}
-              onExport={() => exportChartAsPNG("pie-chart", "habit-distribution")}
+              title="Habit Distribution"
+              icon={
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+                </svg>
+              }
             >
-              <ResponsiveContainer width="100%" height={250} className="sm:!h-[280px] lg:!h-[300px]">
+              <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
                     data={pieData}
@@ -547,7 +512,7 @@ export default function AnalyticsPage() {
                       const percent = total > 0 ? ((entry.value / total) * 100).toFixed(0) : 0;
                       return `${entry.name}: ${percent}%`;
                     }}
-                    outerRadius={80}
+                    outerRadius={90}
                     fill="#8884d8"
                     dataKey="value"
                   >
@@ -557,11 +522,10 @@ export default function AnalyticsPage() {
                   </Pie>
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "#1f2937",
-                      border: "1px solid #374151",
+                      backgroundColor: "rgba(255, 255, 255, 0.95)",
+                      border: "1px solid #e5e7eb",
                       borderRadius: "12px",
-                      color: "#fff",
-                      fontSize: "12px"
+                      fontSize: "12px",
                     }}
                   />
                 </PieChart>
@@ -569,96 +533,79 @@ export default function AnalyticsPage() {
             </ChartCard>
           </div>
 
-          {/* 30-Day Trend */}
+          {/* Completion Trend */}
           <ChartCard
-            id="monthly-trend"
             title={`${timeRange === "7d" ? "7" : "30"}-Day Completion Trend`}
-            icon={<Activity className="w-4 h-4 sm:w-5 sm:h-5" />}
-            onExport={() => exportChartAsPNG("monthly-trend", "completion-trend")}
+            icon={
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+              </svg>
+            }
           >
-            <ResponsiveContainer width="100%" height={280} className="sm:!h-[300px] lg:!h-[320px]">
-              <AreaChart data={monthlyData}>
+            <ResponsiveContainer width="100%" height={320}>
+              <AreaChart data={trendData}>
                 <defs>
                   <linearGradient id="colorCompleted" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
                     <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="date" tick={{ fill: "#9ca3af", fontSize: 10 }} interval={timeRange === "7d" ? 0 : 5} angle={-45} textAnchor="end" height={60} />
-                <YAxis allowDecimals={false} tick={{ fill: "#9ca3af", fontSize: 10 }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="dark:stroke-gray-700" />
+                <XAxis 
+                  dataKey="date" 
+                  tick={{ fill: "#6b7280", fontSize: 11 }} 
+                  interval={timeRange === "7d" ? 0 : 4}
+                  angle={-45}
+                  textAnchor="end"
+                  height={70}
+                />
+                <YAxis 
+                  allowDecimals={false} 
+                  tick={{ fill: "#6b7280", fontSize: 11 }}
+                />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "#1f2937",
-                    border: "1px solid #374151",
+                    backgroundColor: "rgba(255, 255, 255, 0.95)",
+                    border: "1px solid #e5e7eb",
                     borderRadius: "12px",
-                    color: "#fff",
-                    fontSize: "12px"
+                    fontSize: "12px",
                   }}
                 />
                 <Area
                   type="monotone"
                   dataKey="completed"
                   stroke="#3b82f6"
+                  strokeWidth={3}
                   fillOpacity={1}
                   fill="url(#colorCompleted)"
-                  strokeWidth={3}
                 />
               </AreaChart>
             </ResponsiveContainer>
           </ChartCard>
 
-          {/* All Habits Timeline */}
-          <ChartCard
-            id="habits-timeline"
-            title={`All Habits Timeline (Last ${timeRange === "7d" ? "7" : "30"} Days)`}
-            icon={<TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />}
-            onExport={() => exportChartAsPNG("habits-timeline", "habits-timeline")}
-          >
-            <ResponsiveContainer width="100%" height={320} className="sm:!h-[350px] lg:!h-[380px]">
-              <LineChart data={habitsOverTimeData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="date" tick={{ fill: "#9ca3af", fontSize: 10 }} interval={timeRange === "7d" ? 0 : 5} angle={-45} textAnchor="end" height={60} />
-                <YAxis domain={[0, 1]} ticks={[0, 1]} tick={{ fill: "#9ca3af", fontSize: 10 }} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#1f2937",
-                    border: "1px solid #374151",
-                    borderRadius: "12px",
-                    color: "#fff",
-                    fontSize: "12px"
-                  }}
-                  formatter={(value: any) => (value === 1 ? "✓ Completed" : "✗ Not Done")}
-                />
-                <Legend wrapperStyle={{ color: "#9ca3af", fontSize: "11px" }} />
-                {habits.map((habit, idx) => (
-                  <Line
-                    key={habit.id}
-                    type="monotone"
-                    dataKey={habit.name}
-                    stroke={COLORS[idx % COLORS.length]}
-                    strokeWidth={2}
-                    dot={{ r: 3 }}
-                    activeDot={{ r: 6 }}
-                  />
-                ))}
-              </LineChart>
-            </ResponsiveContainer>
-          </ChartCard>
-
           {/* Bottom Grid */}
-          <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
+          <div className="grid lg:grid-cols-2 gap-6">
+            {/* Radar Chart */}
             <ChartCard
-              id="radar-chart"
               title="Habit Performance Radar"
-              icon={<Target className="w-4 h-4 sm:w-5 sm:h-5" />}
-              onExport={() => exportChartAsPNG("radar-chart", "performance-radar")}
+              icon={
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              }
             >
-              <ResponsiveContainer width="100%" height={280} className="sm:!h-[310px] lg:!h-[340px]">
+              <ResponsiveContainer width="100%" height={320}>
                 <RadarChart data={radarData}>
-                  <PolarGrid stroke="#374151" />
-                  <PolarAngleAxis dataKey="habit" tick={{ fill: "#9ca3af", fontSize: 10 }} />
-                  <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: "#9ca3af", fontSize: 10 }} />
+                  <PolarGrid stroke="#e5e7eb" className="dark:stroke-gray-700" />
+                  <PolarAngleAxis 
+                    dataKey="habit" 
+                    tick={{ fill: "#6b7280", fontSize: 11 }}
+                  />
+                  <PolarRadiusAxis 
+                    angle={90} 
+                    domain={[0, 100]} 
+                    tick={{ fill: "#6b7280", fontSize: 10 }}
+                  />
                   <Radar
                     name="Success Rate"
                     dataKey="score"
@@ -669,25 +616,27 @@ export default function AnalyticsPage() {
                   />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "#1f2937",
-                      border: "1px solid #374151",
+                      backgroundColor: "rgba(255, 255, 255, 0.95)",
+                      border: "1px solid #e5e7eb",
                       borderRadius: "12px",
-                      color: "#fff",
-                      fontSize: "12px"
+                      fontSize: "12px",
                     }}
                   />
-                  <Legend wrapperStyle={{ color: "#9ca3af", fontSize: "12px" }} />
+                  <Legend wrapperStyle={{ fontSize: "12px" }} />
                 </RadarChart>
               </ResponsiveContainer>
             </ChartCard>
 
+            {/* Day of Week Analysis */}
             <ChartCard
-              id="day-analysis"
-              title="Performance by Day of Week"
-              icon={<Calendar className="w-4 h-4 sm:w-5 sm:h-5" />}
-              onExport={() => exportChartAsPNG("day-analysis", "day-of-week")}
+              title="Performance by Day"
+              icon={
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              }
             >
-              <ResponsiveContainer width="100%" height={280} className="sm:!h-[310px] lg:!h-[340px]">
+              <ResponsiveContainer width="100%" height={320}>
                 <BarChart data={dayOfWeekData} layout="vertical">
                   <defs>
                     <linearGradient id="dayGradient" x1="0" y1="0" x2="1" y2="0">
@@ -695,111 +644,124 @@ export default function AnalyticsPage() {
                       <stop offset="100%" stopColor="#10b981" stopOpacity={1} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis type="number" domain={[0, 100]} tick={{ fill: "#9ca3af", fontSize: 10 }} />
-                  <YAxis dataKey="day" type="category" tick={{ fill: "#9ca3af", fontSize: 10 }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="dark:stroke-gray-700" />
+                  <XAxis 
+                    type="number" 
+                    domain={[0, 100]} 
+                    tick={{ fill: "#6b7280", fontSize: 11 }}
+                  />
+                  <YAxis 
+                    dataKey="day" 
+                    type="category" 
+                    tick={{ fill: "#6b7280", fontSize: 11 }}
+                  />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "#1f2937",
-                      border: "1px solid #374151",
+                      backgroundColor: "rgba(255, 255, 255, 0.95)",
+                      border: "1px solid #e5e7eb",
                       borderRadius: "12px",
-                      color: "#fff",
-                      fontSize: "12px"
+                      fontSize: "12px",
                     }}
-                    formatter={(value: any, name: any, props: any) => [
-                      `${value}% (${props.payload.completed}/${props.payload.total})`,
-                      "Completion",
-                    ]}
+                    formatter={(value: any) => [`${value}%`, "Completion"]}
                   />
-                  <Bar dataKey="rate" fill="url(#dayGradient)" radius={[0, 8, 8, 0]} />
+                  <Bar 
+                    dataKey="rate" 
+                    fill="url(#dayGradient)" 
+                    radius={[0, 8, 8, 0]}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </ChartCard>
           </div>
 
-          {/* Detailed Breakdown */}
-          <div className="rounded-xl sm:rounded-2xl shadow-2xl border overflow-hidden" style={{ backgroundColor: "rgba(31, 41, 55, 0.5)", backdropFilter: "blur(12px)", borderColor: "#374151" }}>
-            <div className="p-4 sm:p-6 border-b" style={{ background: "linear-gradient(to right, rgba(30, 58, 138, 0.5), rgba(88, 28, 135, 0.5))", borderColor: "#374151" }}>
-              <div className="flex items-center justify-between flex-col sm:flex-row gap-3">
-                <h2 className="text-lg sm:text-xl font-bold text-gray-100">Detailed Habit Breakdown</h2>
-                <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-400">
-                  <Zap className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400" />
-                  <span>{habitBreakdown.length} Active Habits</span>
+          {/* ==================== DETAILED BREAKDOWN TABLE ==================== */}
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
+            <div className="p-5 sm:p-6 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-b border-gray-200 dark:border-gray-800">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
+                  Detailed Habit Breakdown
+                </h2>
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <svg className="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                  <span className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    {habitBreakdown.length} Active
+                  </span>
                 </div>
               </div>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[640px]">
-                <thead style={{ backgroundColor: "rgba(17, 24, 39, 0.5)" }}>
+              <table className="w-full">
+                <thead className="bg-gray-50 dark:bg-gray-800/50">
                   <tr>
-                    <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                       Habit
                     </th>
-                    <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                       Completed
                     </th>
-                    <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                      Success Rate
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                      Rate
                     </th>
-                    <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                       Streak
                     </th>
-                    <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                       Progress
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-700">
-                  {habitBreakdown.length > 0 ? (
-                    habitBreakdown.map((habit, idx) => (
-                      <tr key={`${habit.fullName}-${idx}`} className="hover:bg-gray-700 transition-colors group" style={{ backgroundColor: "transparent" }}>
-                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div
-                              className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full mr-2 sm:mr-3 ring-2 flex-shrink-0"
-                              style={{ backgroundColor: habit.color, "--ring-color": "#1f2937" } as React.CSSProperties}
-                            />
-                            <span className="text-xs sm:text-sm font-semibold text-gray-200 group-hover:text-blue-400 transition-colors truncate">
-                              {habit.fullName}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                          <span className="text-xs sm:text-sm text-gray-300 font-medium">
-                            {habit.completed} <span className="text-gray-500">/ {timeRange === "7d" ? "7" : "30"}</span>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {habitBreakdown.map((habit, idx) => (
+                    <tr 
+                      key={`${habit.fullName}-${idx}`} 
+                      className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                    >
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-3 h-3 rounded-full ring-2 ring-white dark:ring-gray-900 flex-shrink-0"
+                            style={{ backgroundColor: habit.color }}
+                          />
+                          <span className="text-sm font-semibold text-gray-900 dark:text-white truncate max-w-[150px] sm:max-w-none">
+                            {habit.fullName}
                           </span>
-                        </td>
-                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                          <span className="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-bold text-green-400 border" style={{ background: "linear-gradient(to right, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.2))", borderColor: "rgba(16, 185, 129, 0.3)" }}>
-                            {habit.percent}%
+                        </div>
+                      </td>
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                        <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">
+                          {habit.completed} <span className="text-gray-400">/ {timeRange === "7d" ? "7" : "30"}</span>
+                        </span>
+                      </td>
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-800">
+                          {habit.percent}%
+                        </span>
+                      </td>
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5">
+                          <svg className="w-4 h-4 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clipRule="evenodd" />
+                          </svg>
+                          <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                            {habit.streak}
                           </span>
-                        </td>
-                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                          <div className="flex items-center gap-1">
-                            <Flame className="w-3 h-3 sm:w-4 sm:h-4 text-orange-400 flex-shrink-0" />
-                            <span className="text-xs sm:text-sm font-semibold text-gray-200">{habit.streak} days</span>
-                          </div>
-                        </td>
-                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                          <div className="w-full bg-gray-700 rounded-full h-2 sm:h-2.5 overflow-hidden">
-                            <div
-                              className="h-2 sm:h-2.5 rounded-full transition-all duration-500 ease-out"
-                              style={{
-                                width: `${habit.percent}%`,
-                                backgroundColor: habit.color,
-                              }}
-                            />
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={5} className="px-3 sm:px-6 py-6 sm:py-8 text-center text-sm sm:text-base text-gray-400">
-                        No habit data available
+                        </div>
+                      </td>
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                        <div className="w-full max-w-[120px] sm:max-w-[200px] bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
+                          <div
+                            className="h-2.5 rounded-full transition-all duration-500"
+                            style={{
+                              width: `${habit.percent}%`,
+                              backgroundColor: habit.color,
+                            }}
+                          />
+                        </div>
                       </td>
                     </tr>
-                  )}
+                  ))}
                 </tbody>
               </table>
             </div>

@@ -87,6 +87,68 @@ const COLORS = [
   "#14b8a6", "#f43f5e", "#a855f7", "#059669"
 ];
 
+/* -------------------- Custom Tooltip Components -------------------- */
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-gray-900 dark:bg-gray-800 border-2 border-gray-700 dark:border-gray-600 rounded-xl p-4 shadow-2xl">
+        <p className="text-white font-bold text-sm mb-2">{label}</p>
+        {payload.map((entry: any, index: number) => (
+          <p key={index} className="text-gray-200 text-sm" style={{ color: entry.color }}>
+            <span className="font-semibold">{entry.name}:</span> {entry.value}
+          </p>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
+
+const CustomPieTooltip = ({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0];
+    return (
+      <div className="bg-gray-900 dark:bg-gray-800 border-2 border-gray-700 dark:border-gray-600 rounded-xl p-4 shadow-2xl">
+        <p className="text-white font-bold text-sm mb-1">{data.payload.fullName || data.name}</p>
+        <p className="text-gray-200 text-sm">
+          <span className="font-semibold">Completed:</span> {data.value} times
+        </p>
+        <p className="text-gray-200 text-sm">
+          <span className="font-semibold">Percentage:</span> {data.payload.percent}%
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
+
+/* -------------------- Custom Pie Label -------------------- */
+const renderCustomizedLabel = (props: any) => {
+  const RADIAN = Math.PI / 180;
+  const { cx, cy, midAngle, outerRadius, percent, index } = props;
+  const radius = outerRadius + 30;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+  // Only show label if percentage is above 5% to avoid clutter
+  if (percent < 0.05) return null;
+
+  return (
+    <text
+      x={x}
+      y={y}
+      fill="#374151"
+      className="dark:fill-gray-300"
+      textAnchor={x > cx ? 'start' : 'end'}
+      dominantBaseline="central"
+      fontSize="12"
+      fontWeight="600"
+    >
+      {`${(percent * 100).toFixed(0)}%`}
+    </text>
+  );
+};
+
 /* -------------------- UI Components -------------------- */
 function StatCard({
   icon,
@@ -254,10 +316,12 @@ export default function AnalyticsPage() {
   }, [habits, logs, rangeDays]);
 
   const pieData = useMemo(() => {
+    const totalCompleted = habitBreakdown.reduce((sum, h) => sum + h.completed, 0);
     return habitBreakdown.map((h) => ({
       name: h.name,
       value: h.completed,
       fullName: h.fullName,
+      percent: totalCompleted > 0 ? ((h.completed / totalCompleted) * 100).toFixed(1) : 0,
     }));
   }, [habitBreakdown]);
 
@@ -288,6 +352,8 @@ export default function AnalyticsPage() {
       return {
         day,
         rate: total > 0 ? Math.round((completed / total) * 100) : 0,
+        completed,
+        total,
       };
     });
   }, [logs, habits, rangeDays]);
@@ -471,14 +537,7 @@ export default function AnalyticsPage() {
                     allowDecimals={false} 
                     tick={{ fill: "#6b7280", fontSize: 11 }}
                   />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "rgba(255, 255, 255, 0.95)",
-                      border: "1px solid #e5e7eb",
-                      borderRadius: "12px",
-                      fontSize: "12px",
-                    }}
-                  />
+                  <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(59, 130, 246, 0.1)' }} />
                   <Legend wrapperStyle={{ fontSize: "12px" }} />
                   <Bar 
                     dataKey="completed" 
@@ -506,13 +565,12 @@ export default function AnalyticsPage() {
                     data={pieData}
                     cx="50%"
                     cy="50%"
-                    labelLine={false}
-                    label={(entry: any) => {
-                      const total = pieData.reduce((sum, item) => sum + item.value, 0);
-                      const percent = total > 0 ? ((entry.value / total) * 100).toFixed(0) : 0;
-                      return `${entry.name}: ${percent}%`;
+                    labelLine={{
+                      stroke: '#9ca3af',
+                      strokeWidth: 1,
                     }}
-                    outerRadius={90}
+                    label={renderCustomizedLabel}
+                    outerRadius={80}
                     fill="#8884d8"
                     dataKey="value"
                   >
@@ -520,14 +578,7 @@ export default function AnalyticsPage() {
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "rgba(255, 255, 255, 0.95)",
-                      border: "1px solid #e5e7eb",
-                      borderRadius: "12px",
-                      fontSize: "12px",
-                    }}
-                  />
+                  <Tooltip content={<CustomPieTooltip />} />
                 </PieChart>
               </ResponsiveContainer>
             </ChartCard>
@@ -563,14 +614,7 @@ export default function AnalyticsPage() {
                   allowDecimals={false} 
                   tick={{ fill: "#6b7280", fontSize: 11 }}
                 />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "rgba(255, 255, 255, 0.95)",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "12px",
-                    fontSize: "12px",
-                  }}
-                />
+                <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#3b82f6', strokeWidth: 2 }} />
                 <Area
                   type="monotone"
                   dataKey="completed"
@@ -614,14 +658,7 @@ export default function AnalyticsPage() {
                     fillOpacity={0.6}
                     strokeWidth={2}
                   />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "rgba(255, 255, 255, 0.95)",
-                      border: "1px solid #e5e7eb",
-                      borderRadius: "12px",
-                      fontSize: "12px",
-                    }}
-                  />
+                  <Tooltip content={<CustomTooltip />} />
                   <Legend wrapperStyle={{ fontSize: "12px" }} />
                 </RadarChart>
               </ResponsiveContainer>
@@ -655,19 +692,12 @@ export default function AnalyticsPage() {
                     type="category" 
                     tick={{ fill: "#6b7280", fontSize: 11 }}
                   />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "rgba(255, 255, 255, 0.95)",
-                      border: "1px solid #e5e7eb",
-                      borderRadius: "12px",
-                      fontSize: "12px",
-                    }}
-                    formatter={(value: any) => [`${value}%`, "Completion"]}
-                  />
+                  <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(16, 185, 129, 0.1)' }} />
                   <Bar 
                     dataKey="rate" 
                     fill="url(#dayGradient)" 
                     radius={[0, 8, 8, 0]}
+                    name="Completion Rate %"
                   />
                 </BarChart>
               </ResponsiveContainer>

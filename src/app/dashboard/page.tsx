@@ -190,7 +190,7 @@ export default function DashboardPage() {
   const todayProgressRate = habits.length === 0 ? 0 : todayCompletedCount / habits.length;
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0B1120] text-gray-900 dark:text-gray-100 font-sans selection:bg-indigo-500/30">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0B1120] text-gray-900 dark:text-gray-100 font-sans selection:bg-indigo-500/30 overflow-x-hidden">
       <TopNav />
 
       {/* Main Container - Extended max width for TV/Large displays */}
@@ -261,7 +261,7 @@ export default function DashboardPage() {
 
           {/* LEFT SIDEBAR: Daily Focus (Order 1 on Mobile, Sticky on Desktop) */}
           <div className="w-full lg:w-[360px] xl:w-[400px] 2xl:w-[450px] flex-shrink-0 lg:sticky lg:top-24 order-1 lg:order-none space-y-6">
-            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2.5rem] p-6 sm:p-8 shadow-sm">
+            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl sm:rounded-[2.5rem] p-5 sm:p-8 shadow-sm">
 
               <div className="flex items-center justify-between mb-8">
                 <div>
@@ -284,7 +284,7 @@ export default function DashboardPage() {
 
               {habits.length > 0 && (
                 <div className="flex items-center justify-center mb-10">
-                  <div className="relative w-44 h-44 2xl:w-52 2xl:h-52">
+                  <div className="relative w-36 h-36 sm:w-44 sm:h-44 2xl:w-52 2xl:h-52">
                     <svg className="transform -rotate-90 w-full h-full filter drop-shadow-2xl">
                       <circle cx="50%" cy="50%" r="42%" stroke="currentColor" strokeWidth="8%" fill="transparent" className="text-gray-100 dark:text-gray-800/50" />
                       <circle
@@ -388,7 +388,7 @@ export default function DashboardPage() {
 
             {/* Filters Toolbar */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white/80 dark:bg-gray-900/80 p-2 sm:p-3 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 backdrop-blur-xl overflow-x-auto w-full">
-              <div className="flex w-full sm:w-auto p-1 bg-gray-100/80 dark:bg-gray-800/80 rounded-2xl min-w-max">
+              <div className="flex w-full sm:w-auto p-1 bg-gray-100/80 dark:bg-gray-800/80 rounded-2xl overflow-x-auto custom-scrollbar">
                 {(["week", "month", "year", "allTime"] as ViewMode[]).map((m) => (
                   <button
                     key={m}
@@ -429,7 +429,7 @@ export default function DashboardPage() {
             {/* Tracker Content Area */}
             <div className="w-full">
               {habits.length === 0 ? (
-                <div className="bg-white dark:bg-gray-900 rounded-[2rem] p-12 lg:p-20 text-center border border-gray-100 dark:border-gray-800 shadow-sm relative overflow-hidden">
+                <div className="bg-white dark:bg-gray-900 rounded-2xl sm:rounded-[2rem] p-8 sm:p-12 lg:p-20 text-center border border-gray-100 dark:border-gray-800 shadow-sm relative overflow-hidden">
                   <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
                   <div className="inline-flex items-center justify-center w-24 h-24 bg-indigo-50 dark:bg-indigo-500/10 rounded-full mb-8 ring-8 ring-indigo-50/50 dark:ring-indigo-500/5">
                     <svg className="w-10 h-10 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
@@ -446,7 +446,7 @@ export default function DashboardPage() {
                 <>
                   {/* ---------- WEEK GRID ---------- */}
                   {view === "week" && (
-                    <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] shadow-sm overflow-hidden p-4 sm:p-6 lg:p-8">
+                    <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl sm:rounded-[2rem] shadow-sm overflow-hidden p-3 sm:p-6 lg:p-8">
                       {/* Mobile Scrollable Container */}
                       <div className="overflow-x-auto pb-4 custom-scrollbar">
                         <div className="min-w-[600px] lg:min-w-full">

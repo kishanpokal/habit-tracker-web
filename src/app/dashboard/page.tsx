@@ -194,12 +194,12 @@ export default function DashboardPage() {
       <TopNav />
 
       {/* Main Container - Extended max width for TV/Large displays */}
-      <main className="pt-24 pb-24 px-4 sm:px-6 lg:px-8 max-w-[1600px] mx-auto space-y-8">
+      <main className="pt-16 sm:pt-20 lg:pt-24 pb-24 lg:pb-12 px-3 sm:px-4 lg:px-8 max-w-[1600px] mx-auto space-y-4 sm:space-y-6 lg:space-y-8">
 
         {/* ==================== HEADER ==================== */}
-        <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 sm:gap-6 bg-white/50 dark:bg-gray-900/50 p-6 rounded-[2rem] border border-gray-200/50 dark:border-gray-800/50 backdrop-blur-xl">
+        <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-6 bg-white/50 dark:bg-gray-900/50 p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-gray-200/50 dark:border-gray-800/50 backdrop-blur-xl">
           <div className="space-y-2">
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight">
+            <h1 className="text-xl sm:text-3xl lg:text-4xl xl:text-5xl font-black tracking-tight">
               Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-500">{user.displayName || user.email?.split("@")[0]}</span> 👋
             </h1>
             <p className="text-gray-500 dark:text-gray-400 font-medium text-sm sm:text-base">
@@ -210,20 +210,20 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setShowTemplates(true)}
-              className="group hidden sm:flex items-center gap-2 px-4 py-3.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-2xl font-bold hover:-translate-y-1 transition-all duration-300 active:scale-95 text-sm"
+              className="group flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-xl sm:rounded-2xl font-bold hover:-translate-y-1 transition-all duration-300 active:scale-95 text-xs sm:text-sm"
             >
               <span>📋</span>
-              <span>Templates</span>
+              <span className="hidden sm:inline">Templates</span>
             </button>
             <button
               onClick={() => setShowAddHabit(true)}
-              className="group hidden sm:flex items-center gap-2 px-6 py-3.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-2xl font-bold shadow-lg shadow-gray-900/20 dark:shadow-white/10 hover:-translate-y-1 transition-all duration-300 active:scale-95"
+              className="group flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2.5 sm:py-3.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl sm:rounded-2xl font-bold shadow-lg shadow-gray-900/20 dark:shadow-white/10 hover:-translate-y-1 transition-all duration-300 active:scale-95 text-xs sm:text-sm"
             >
-              <svg className="w-5 h-5 transition-transform group-hover:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
-              <span>New Habit</span>
+              <svg className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+              <span className="hidden sm:inline">New Habit</span>
             </button>
           </div>
         </header>

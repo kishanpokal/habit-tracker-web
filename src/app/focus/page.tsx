@@ -89,7 +89,7 @@ export default function FocusTimerPage() {
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-[#030712] text-gray-900 dark:text-gray-100">
             <TopNav />
-            <main className="pt-20 sm:pt-24 pb-12 px-4 sm:px-6 max-w-2xl mx-auto">
+            <main className="pt-16 sm:pt-20 lg:pt-24 pb-24 lg:pb-12 px-4 sm:px-6 max-w-2xl mx-auto">
                 {/* Mode Tabs */}
                 <div className="flex gap-2 justify-center mb-8">
                     {(Object.entries(MODES) as [TimerMode, typeof MODES.focus][]).map(([key, cfg]) => (

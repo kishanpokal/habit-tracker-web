@@ -88,7 +88,7 @@ export default function ProfilePage() {
         <div className="min-h-screen bg-gray-50 dark:bg-[#030712] text-gray-900 dark:text-gray-100">
             <TopNav />
 
-            <main className="pt-20 sm:pt-24 pb-12 px-3 sm:px-6 lg:px-8 max-w-3xl mx-auto space-y-6">
+            <main className="pt-16 sm:pt-20 lg:pt-24 pb-24 lg:pb-12 px-3 sm:px-6 lg:px-8 max-w-3xl mx-auto space-y-6">
                 {/* Profile Header */}
                 <div className="bg-white dark:bg-[#111827] rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">
                     <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 h-32 relative">

@@ -114,7 +114,7 @@ export default function JournalPage() {
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-[#030712] text-gray-900 dark:text-gray-100">
             <TopNav />
-            <main className="pt-20 sm:pt-24 pb-12 px-3 sm:px-6 lg:px-8 max-w-4xl mx-auto space-y-5">
+            <main className="pt-16 sm:pt-20 lg:pt-24 pb-24 lg:pb-12 px-3 sm:px-6 lg:px-8 max-w-4xl mx-auto space-y-5">
 
                 {/* Header */}
                 <div className="bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 rounded-2xl p-6 text-white relative overflow-hidden">

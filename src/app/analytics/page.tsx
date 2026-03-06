@@ -490,7 +490,7 @@ export default function AdvancedAnalyticsPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-[#030712] text-gray-900 dark:text-gray-100 font-sans">
       <TopNav />
 
-      <main id="analytics-content" className="pt-20 sm:pt-24 pb-12 px-3 sm:px-6 lg:px-8 max-w-[1600px] mx-auto space-y-5 lg:space-y-6">
+      <main id="analytics-content" className="pt-16 sm:pt-20 lg:pt-24 pb-24 lg:pb-12 px-3 sm:px-6 lg:px-8 max-w-[1600px] mx-auto space-y-5 lg:space-y-6">
 
         {/* ═══ HEADER ═══ */}
         <header className="flex flex-col gap-5 bg-white dark:bg-[#111827] p-5 sm:p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">

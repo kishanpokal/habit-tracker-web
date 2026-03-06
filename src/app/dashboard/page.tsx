@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import TopNav from "@/components/TopNav";
 import AddHabitModal from "@/components/AddHabitModal";
+import HabitTemplateModal from "@/components/HabitTemplateModal";
 import {
   collection,
   doc,
@@ -62,6 +63,7 @@ export default function DashboardPage() {
   const router = useRouter();
 
   const [showAddHabit, setShowAddHabit] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
   const [habits, setHabits] = useState<Habit[]>([]);
   const [logs, setLogs] = useState<HabitLogMap>({});
   const [view, setView] = useState<ViewMode>("week");
@@ -193,12 +195,12 @@ export default function DashboardPage() {
 
       {/* Main Container - Extended max width for TV/Large displays */}
       <main className="pt-24 pb-24 px-4 sm:px-6 lg:px-8 max-w-[1600px] mx-auto space-y-8">
-        
+
         {/* ==================== HEADER ==================== */}
         <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 sm:gap-6 bg-white/50 dark:bg-gray-900/50 p-6 rounded-[2rem] border border-gray-200/50 dark:border-gray-800/50 backdrop-blur-xl">
           <div className="space-y-2">
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight">
-              Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-500">{user.email?.split("@")[0]}</span> 👋
+              Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-500">{user.displayName || user.email?.split("@")[0]}</span> 👋
             </h1>
             <p className="text-gray-500 dark:text-gray-400 font-medium text-sm sm:text-base">
               {view === "week" && `${formatDate(dateRange[0])} — ${formatDate(dateRange[dateRange.length - 1])}`}
@@ -208,7 +210,14 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              onClick={() => setShowTemplates(true)}
+              className="group hidden sm:flex items-center gap-2 px-4 py-3.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-2xl font-bold hover:-translate-y-1 transition-all duration-300 active:scale-95 text-sm"
+            >
+              <span>📋</span>
+              <span>Templates</span>
+            </button>
             <button
               onClick={() => setShowAddHabit(true)}
               className="group hidden sm:flex items-center gap-2 px-6 py-3.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-2xl font-bold shadow-lg shadow-gray-900/20 dark:shadow-white/10 hover:-translate-y-1 transition-all duration-300 active:scale-95"
@@ -219,13 +228,41 @@ export default function DashboardPage() {
           </div>
         </header>
 
+        {/* Daily Quote */}
+        {(() => {
+          const QUOTES = [
+            { text: "We are what we repeatedly do. Excellence, then, is not an act, but a habit.", author: "Aristotle" },
+            { text: "Success is the sum of small efforts, repeated day in and day out.", author: "Robert Collier" },
+            { text: "Motivation is what gets you started. Habit is what keeps you going.", author: "Jim Ryun" },
+            { text: "The secret of getting ahead is getting started.", author: "Mark Twain" },
+            { text: "Small daily improvements are the key to staggering long-term results.", author: "Unknown" },
+            { text: "You do not rise to the level of your goals. You fall to the level of your systems.", author: "James Clear" },
+            { text: "It does not matter how slowly you go as long as you do not stop.", author: "Confucius" },
+            { text: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
+            { text: "Discipline is choosing between what you want now and what you want most.", author: "Abraham Lincoln" },
+            { text: "Champions keep playing until they get it right.", author: "Billie Jean King" },
+            { text: "Consistency is the hallmark of the unimaginative.", author: "Oscar Wilde" },
+            { text: "A journey of a thousand miles begins with a single step.", author: "Lao Tzu" },
+            { text: "The best time to plant a tree was 20 years ago. The second best time is now.", author: "Chinese Proverb" },
+            { text: "Don't count the days, make the days count.", author: "Muhammad Ali" },
+          ];
+          const dayIndex = Math.floor(Date.now() / 86400000) % QUOTES.length;
+          const q = QUOTES[dayIndex];
+          return (
+            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-500/5 dark:to-purple-500/5 rounded-2xl border border-indigo-100 dark:border-indigo-500/10 p-4 sm:p-5">
+              <p className="text-sm text-gray-700 dark:text-gray-300 italic font-medium leading-relaxed">&ldquo;{q.text}&rdquo;</p>
+              <p className="text-xs text-indigo-500 dark:text-indigo-400 font-bold mt-1.5">— {q.author}</p>
+            </div>
+          );
+        })()}
+
         {/* ==================== TWO-COLUMN LAYOUT ==================== */}
         <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
-          
+
           {/* LEFT SIDEBAR: Daily Focus (Order 1 on Mobile, Sticky on Desktop) */}
           <div className="w-full lg:w-[360px] xl:w-[400px] 2xl:w-[450px] flex-shrink-0 lg:sticky lg:top-24 order-1 lg:order-none space-y-6">
             <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2.5rem] p-6 sm:p-8 shadow-sm">
-              
+
               <div className="flex items-center justify-between mb-8">
                 <div>
                   <h2 className="text-2xl font-black mb-1">
@@ -286,16 +323,15 @@ export default function DashboardPage() {
                   habits.map((h) => {
                     const done = logs[h.id]?.has(selectedDate);
                     const streak = getStreak(h.id, selectedDate);
-                    
+
                     return (
                       <div
                         key={h.id}
                         onClick={() => toggleHabit(h.id, selectedDate, !done)}
-                        className={`group relative flex items-center justify-between p-4 rounded-2xl cursor-pointer transition-all duration-300 border ${
-                          done 
-                            ? "bg-gray-900 dark:bg-gray-800 border-gray-900 dark:border-gray-700 text-white shadow-xl shadow-gray-900/10 scale-[1.02]" 
-                            : "bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:shadow-sm text-gray-900 dark:text-white"
-                        }`}
+                        className={`group relative flex items-center justify-between p-4 rounded-2xl cursor-pointer transition-all duration-300 border ${done
+                          ? "bg-gray-900 dark:bg-gray-800 border-gray-900 dark:border-gray-700 text-white shadow-xl shadow-gray-900/10 scale-[1.02]"
+                          : "bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:shadow-sm text-gray-900 dark:text-white"
+                          }`}
                       >
                         {done && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1/2 rounded-r-full" style={{ backgroundColor: h.color }} />}
                         <div className="flex items-center gap-4 pl-2">
@@ -321,7 +357,7 @@ export default function DashboardPage() {
 
           {/* RIGHT MAIN AREA: Stats + Analytics Grid (Order 2 on Mobile) */}
           <div className="flex-1 order-2 lg:order-none min-w-0 space-y-6 lg:space-y-8">
-            
+
             {/* Micro-Stats Grid */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               <div className="bg-white dark:bg-gray-900/80 backdrop-blur-xl border border-gray-100 dark:border-gray-800 rounded-3xl p-5 shadow-sm hover:shadow-md transition-shadow">
@@ -357,11 +393,10 @@ export default function DashboardPage() {
                   <button
                     key={m}
                     onClick={() => setView(m)}
-                    className={`flex-1 sm:flex-none px-4 sm:px-6 py-2.5 rounded-xl text-sm font-bold capitalize transition-all duration-300 ${
-                      view === m
-                        ? "bg-white dark:bg-gray-700 text-indigo-600 dark:text-white shadow-sm ring-1 ring-gray-900/5"
-                        : "text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
-                    }`}
+                    className={`flex-1 sm:flex-none px-4 sm:px-6 py-2.5 rounded-xl text-sm font-bold capitalize transition-all duration-300 ${view === m
+                      ? "bg-white dark:bg-gray-700 text-indigo-600 dark:text-white shadow-sm ring-1 ring-gray-900/5"
+                      : "text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+                      }`}
                   >
                     {m === "allTime" ? "All Time" : m}
                   </button>
@@ -377,7 +412,7 @@ export default function DashboardPage() {
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
                   </button>
                 </div>
-                
+
                 <div className="h-6 w-px bg-gray-200 dark:bg-gray-700 mx-1 hidden sm:block" />
 
                 <div className="hidden sm:flex bg-gray-100/80 dark:bg-gray-800/80 p-1 rounded-2xl">
@@ -439,10 +474,10 @@ export default function DashboardPage() {
                             {habits.map((h) => {
                               const completedCount = dateRange.filter((d) => logs[h.id]?.has(d)).length;
                               const completionRate = Math.round((completedCount / dateRange.length) * 100);
-                              
+
                               return (
                                 <div key={h.id} className="group flex items-center gap-3 bg-gray-50/50 dark:bg-gray-800/30 rounded-3xl p-3 sm:p-4 border border-transparent hover:border-gray-100 dark:hover:border-gray-700 transition-colors">
-                                  
+
                                   {/* Habit Name */}
                                   <div className="flex items-center gap-3 lg:gap-4 w-[140px] lg:w-[180px] xl:w-[220px] flex-shrink-0">
                                     <div className="w-2.5 h-10 lg:h-12 rounded-full flex-shrink-0" style={{ backgroundColor: h.color }} />
@@ -458,11 +493,10 @@ export default function DashboardPage() {
                                         <button
                                           key={d}
                                           onClick={() => toggleHabit(h.id, d, !done)}
-                                          className={`relative aspect-square rounded-xl lg:rounded-2xl flex items-center justify-center transition-all duration-300 ${
-                                            done 
-                                              ? "scale-105 shadow-md shadow-indigo-500/20 text-white" 
-                                              : "bg-white dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 text-transparent hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-50"
-                                          } ${isToday && !done ? "ring-4 ring-indigo-500/10 border-indigo-200 dark:border-indigo-500/30" : ""}`}
+                                          className={`relative aspect-square rounded-xl lg:rounded-2xl flex items-center justify-center transition-all duration-300 ${done
+                                            ? "scale-105 shadow-md shadow-indigo-500/20 text-white"
+                                            : "bg-white dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 text-transparent hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-50"
+                                            } ${isToday && !done ? "ring-4 ring-indigo-500/10 border-indigo-200 dark:border-indigo-500/30" : ""}`}
                                           style={done ? { backgroundColor: h.color, borderColor: h.color } : {}}
                                         >
                                           <svg className={`w-5 h-5 lg:w-6 lg:h-6 transition-transform duration-300 ${done ? 'scale-100' : 'scale-50 opacity-0'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -492,7 +526,7 @@ export default function DashboardPage() {
                       {habits.map((h) => {
                         const completedCount = dateRange.filter((d) => logs[h.id]?.has(d)).length;
                         const completionRate = Math.round((completedCount / dateRange.length) * 100);
-                        
+
                         return (
                           <div key={h.id} className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all">
                             <div className="flex items-center justify-between mb-6">
@@ -505,7 +539,7 @@ export default function DashboardPage() {
                                 <span className="text-xs font-semibold text-gray-400">{completedCount}/{dateRange.length}</span>
                               </div>
                             </div>
-                            
+
                             <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-start max-h-[160px] overflow-y-auto custom-scrollbar pr-2">
                               {dateRange.map((d) => {
                                 const done = logs[h.id]?.has(d);
@@ -533,13 +567,13 @@ export default function DashboardPage() {
                   {habits.map((h) => {
                     const completedCount = dateRange.filter((d) => logs[h.id]?.has(d)).length;
                     const completionRate = Math.round((completedCount / dateRange.length) * 100);
-                    
+
                     return (
                       <div key={h.id} className="bg-white dark:bg-gray-900 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-md transition-shadow">
                         <div className="flex items-center justify-between mb-5">
                           <div className="flex items-center gap-4 truncate">
                             <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-gray-50 dark:bg-gray-800 flex-shrink-0">
-                               <div className="w-4 h-4 rounded-full" style={{ backgroundColor: h.color }} />
+                              <div className="w-4 h-4 rounded-full" style={{ backgroundColor: h.color }} />
                             </div>
                             <div className="truncate">
                               <h3 className="font-bold text-xl truncate" title={h.name}>{h.name}</h3>
@@ -549,7 +583,7 @@ export default function DashboardPage() {
                           <span className="text-2xl lg:text-3xl font-black pl-2">{completionRate}%</span>
                         </div>
                         <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                          <div 
+                          <div
                             className="h-full rounded-full transition-all duration-1000 ease-out"
                             style={{ width: `${completionRate}%`, backgroundColor: h.color }}
                           />
@@ -573,14 +607,16 @@ export default function DashboardPage() {
       </button>
 
       {showAddHabit && <AddHabitModal onClose={() => setShowAddHabit(false)} />}
-      
+
       {/* Utility Styles for specific elements like custom-scrollbar to keep things neat */}
-      <style dangerouslySetInnerHTML={{__html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(156, 163, 175, 0.3); border-radius: 20px; }
         .dark .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(75, 85, 99, 0.5); }
       `}} />
+      {showTemplates && <HabitTemplateModal onClose={() => setShowTemplates(false)} />}
     </div>
   );
 }

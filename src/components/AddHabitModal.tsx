@@ -6,7 +6,9 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { useHabits } from "@/hooks/useHabits";
 import Link from "next/link";
-import { X, Sparkles, Clock, FileText, Calendar, Target, Palette } from "lucide-react";
+import { X, Sparkles, Clock, FileText, Calendar, Target, Palette, Tag } from "lucide-react";
+
+const CATEGORIES = ["Health", "Productivity", "Fitness", "Learning", "Mindfulness", "Social", "Finance", "Creative", "Other"];
 
 type AddHabitModalProps = {
   onClose: () => void;
@@ -21,6 +23,7 @@ export default function AddHabitModal({ onClose }: AddHabitModalProps) {
   const [targetDays, setTargetDays] = useState(7);
   const [reminderTime, setReminderTime] = useState("");
   const [notes, setNotes] = useState("");
+  const [category, setCategory] = useState("Other");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [successAnimation, setSuccessAnimation] = useState(false);
@@ -46,6 +49,7 @@ export default function AddHabitModal({ onClose }: AddHabitModalProps) {
         name: name.trim(),
         color,
         targetDays,
+        category,
         reminderTime: reminderTime || null,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         notes,
@@ -66,7 +70,7 @@ export default function AddHabitModal({ onClose }: AddHabitModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-fade-in">
       <div className="w-full max-w-2xl rounded-3xl bg-white dark:bg-gray-900 shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden animate-scale-in max-h-[95vh] flex flex-col">
-        
+
         {/* Success Overlay */}
         {successAnimation && (
           <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 via-green-500/20 to-teal-500/20 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in">
@@ -111,7 +115,7 @@ export default function AddHabitModal({ onClose }: AddHabitModalProps) {
                 </div>
               </div>
             </div>
-            
+
             <button
               onClick={onClose}
               className="w-11 h-11 rounded-xl bg-white/20 backdrop-blur-md hover:bg-white/30 transition-all flex items-center justify-center group border border-white/30 shadow-lg"
@@ -123,7 +127,7 @@ export default function AddHabitModal({ onClose }: AddHabitModalProps) {
 
         {/* Form Content - Scrollable */}
         <div className="p-8 overflow-y-auto flex-1 space-y-6">
-          
+
           {/* Current Habits Preview */}
           <div className="rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 p-5 border border-blue-200 dark:border-blue-800">
             <div className="flex items-center justify-between mb-4">
@@ -194,6 +198,24 @@ export default function AddHabitModal({ onClose }: AddHabitModalProps) {
             />
           </div>
 
+          {/* Category */}
+          <div>
+            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              <Tag className="w-4 h-4" />
+              Category
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {CATEGORIES.map(cat => (
+                <button key={cat} type="button" onClick={() => setCategory(cat)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${category === cat
+                      ? "bg-indigo-500 text-white shadow-md"
+                      : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+                    }`}
+                >{cat}</button>
+              ))}
+            </div>
+          </div>
+
           {/* Color Picker */}
           <div>
             <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
@@ -206,12 +228,11 @@ export default function AddHabitModal({ onClose }: AddHabitModalProps) {
                   key={c}
                   type="button"
                   onClick={() => setColor(c)}
-                  className={`relative w-12 h-12 rounded-xl transition-all hover:scale-110 shadow-md ${
-                    color === c
+                  className={`relative w-12 h-12 rounded-xl transition-all hover:scale-110 shadow-md ${color === c
                       ? "ring-4 ring-offset-2 dark:ring-offset-gray-900 scale-110"
                       : "hover:ring-2 ring-gray-300 dark:ring-gray-600"
-                  }`}
-                  style={{ 
+                    }`}
+                  style={{
                     backgroundColor: c
                   }}
                 >
@@ -253,11 +274,10 @@ export default function AddHabitModal({ onClose }: AddHabitModalProps) {
                   key={day}
                   type="button"
                   onClick={() => setTargetDays(day)}
-                  className={`relative py-4 rounded-xl font-semibold text-base transition-all ${
-                    targetDays === day
+                  className={`relative py-4 rounded-xl font-semibold text-base transition-all ${targetDays === day
                       ? "bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/50 scale-105"
                       : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 hover:scale-105"
-                  }`}
+                    }`}
                 >
                   {day}
                   {targetDays === day && (

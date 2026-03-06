@@ -1,37 +1,131 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 
+/* ─── Particle blob component ─── */
+function FloatingOrb({
+  size,
+  color,
+  top,
+  left,
+  delay,
+}: {
+  size: number;
+  color: string;
+  top: string;
+  left: string;
+  delay: number;
+}) {
+  return (
+    <div
+      className="absolute rounded-full mix-blend-screen pointer-events-none"
+      style={{
+        width: size,
+        height: size,
+        top,
+        left,
+        background: `radial-gradient(circle, ${color} 0%, transparent 70%)`,
+        filter: `blur(${size / 3}px)`,
+        animation: `orbFloat ${8 + delay}s ease-in-out infinite`,
+        animationDelay: `${delay}s`,
+        opacity: 0.6,
+      }}
+    />
+  );
+}
+
+/* ─── Animated checklist item ─── */
+function ChecklistItem({
+  text,
+  delay,
+  checked,
+}: {
+  text: string;
+  delay: number;
+  checked: boolean;
+}) {
+  return (
+    <div
+      className="flex items-center gap-3 opacity-0"
+      style={{
+        animation: `slideUp 0.5s ease-out ${delay}s forwards`,
+      }}
+    >
+      <div
+        className={`w-5 h-5 rounded-md flex items-center justify-center transition-all duration-500 ${checked
+          ? "bg-gradient-to-br from-emerald-400 to-green-500 shadow-lg shadow-emerald-500/30"
+          : "border-2 border-white/20"
+          }`}
+      >
+        {checked && (
+          <svg
+            className="w-3 h-3 text-white"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={3}
+              d="M5 13l4 4L19 7"
+            />
+          </svg>
+        )}
+      </div>
+      <span
+        className={`text-sm font-medium transition-all duration-500 ${checked ? "text-white/90 line-through" : "text-white/50"
+          }`}
+      >
+        {text}
+      </span>
+    </div>
+  );
+}
+
+/* ─── Main Component ─── */
 export default function AuthGatePage() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  
-  // State for the progress bar animation
+
   const [progress, setProgress] = useState(0);
+  const [currentStep, setCurrentStep] = useState(0);
+
+  const steps = useMemo(
+    () => [
+      "Initializing secure connection",
+      "Loading your workspace",
+      "Syncing habit data",
+      "Preparing dashboard",
+    ],
+    []
+  );
 
   useEffect(() => {
-    // Simulate smooth progress loading over 2 seconds
-    const duration = 2000;
-    const intervalTime = 20;
-    const steps = duration / intervalTime;
-    let currentStep = 0;
+    const duration = 3000;
+    const intervalTime = 16;
+    const totalSteps = duration / intervalTime;
+    let step = 0;
 
     const progressInterval = setInterval(() => {
-      currentStep++;
-      setProgress(Math.min((currentStep / steps) * 100, 100));
+      step++;
+      const newProgress = Math.min((step / totalSteps) * 100, 100);
+      setProgress(newProgress);
+
+      // Update step text at 25%, 50%, 75%
+      if (newProgress > 25 && newProgress < 50) setCurrentStep(1);
+      else if (newProgress >= 50 && newProgress < 75) setCurrentStep(2);
+      else if (newProgress >= 75) setCurrentStep(3);
     }, intervalTime);
 
-    // Routing logic after minimum delay
     const timer = setTimeout(() => {
       if (loading) return;
-      
       if (!user || !user.emailVerified) {
-        router.replace("/login");
+        router.replace("/landing");
         return;
       }
-      
       router.replace("/dashboard");
     }, duration);
 
@@ -41,166 +135,254 @@ export default function AuthGatePage() {
     };
   }, [user, loading, router]);
 
+  // Fixed positions to avoid hydration mismatch (no Math.random)
+  const orbs = [
+    { size: 380, color: "rgba(99,102,241,0.4)", top: "5%", left: "10%", delay: 0 },
+    { size: 320, color: "rgba(139,92,246,0.35)", top: "60%", left: "75%", delay: 1.5 },
+    { size: 280, color: "rgba(236,72,153,0.3)", top: "25%", left: "55%", delay: 3 },
+    { size: 350, color: "rgba(14,165,233,0.3)", top: "70%", left: "25%", delay: 4.5 },
+    { size: 260, color: "rgba(20,184,166,0.25)", top: "15%", left: "85%", delay: 6 },
+    { size: 300, color: "rgba(168,85,247,0.35)", top: "85%", left: "45%", delay: 7.5 },
+  ];
+
   return (
-    <div className="min-h-screen bg-[#0B1120] flex items-center justify-center overflow-hidden relative selection:bg-indigo-500/30">
-      
-      {/* ==================== AMBIENT BACKGROUND ==================== */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40vw] h-[40vw] rounded-full bg-indigo-600/20 blur-[120px] mix-blend-screen animate-blob" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-purple-600/20 blur-[120px] mix-blend-screen animate-blob animation-delay-2000" />
-        <div className="absolute top-[20%] left-[60%] w-[30vw] h-[30vw] rounded-full bg-pink-600/20 blur-[100px] mix-blend-screen animate-blob animation-delay-4000" />
-        
-        {/* Subtle grid overlay for texture */}
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] mix-blend-overlay" />
+    <div className="min-h-screen bg-[#030712] flex items-center justify-center overflow-hidden relative selection:bg-indigo-500/30">
+      {/* ───── Dynamic Background ───── */}
+      <div className="absolute inset-0 overflow-hidden">
+        {orbs.map((orb, i) => (
+          <FloatingOrb key={i} {...orb} />
+        ))}
+
+        {/* Grid pattern */}
+        <div
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
+            backgroundSize: "60px 60px",
+          }}
+        />
+
+        {/* Radial vignette */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(3,7,18,0.6)_100%)]" />
       </div>
 
-      {/* ==================== MAIN GLASS CARD ==================== */}
-      <div className="relative z-10 w-full max-w-md px-6 animate-reveal">
-        <div className="bg-white/[0.03] backdrop-blur-2xl border border-white/[0.05] rounded-[2.5rem] p-10 sm:p-12 shadow-2xl flex flex-col items-center text-center relative overflow-hidden">
-          
-          {/* Card subtle inner glow */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+      {/* ───── Main Content ───── */}
+      <div className="relative z-10 w-full max-w-lg px-6 flex flex-col items-center">
+        {/* Logo + Brand */}
+        <div
+          className="mb-12 flex flex-col items-center opacity-0"
+          style={{ animation: "fadeUp 0.8s ease-out 0.2s forwards" }}
+        >
+          {/* Animated Logo */}
+          <div className="relative mb-6">
+            {/* Glow rings */}
+            <div className="absolute inset-[-12px] rounded-[2rem] bg-gradient-to-r from-indigo-500/30 to-purple-500/30 blur-xl animate-pulse" />
+            <div className="absolute inset-[-6px] rounded-[1.75rem] bg-gradient-to-r from-indigo-500/20 to-cyan-500/20 blur-md" />
 
-          {/* ==================== ANIMATED ICON ==================== */}
-          <div className="relative mb-8">
-            {/* Outer pulsing rings */}
-            <div className="absolute inset-0 rounded-3xl bg-indigo-500/20 animate-ping-slow" />
-            <div className="absolute inset-0 rounded-3xl bg-purple-500/20 animate-ping-slower" />
-            
-            {/* Core Icon Box */}
-            <div className="relative w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl flex items-center justify-center shadow-lg shadow-indigo-500/30 animate-float">
-              <svg 
-                className="w-10 h-10 text-white" 
-                fill="none" 
-                stroke="currentColor" 
+            {/* Logo box */}
+            <div className="relative w-24 h-24 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-[1.75rem] flex items-center justify-center shadow-2xl shadow-indigo-500/40">
+              <div className="absolute inset-0.5 rounded-[1.5rem] bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500" />
+              <svg
+                className="w-12 h-12 text-white relative z-10 drop-shadow-lg"
+                fill="none"
+                stroke="currentColor"
                 viewBox="0 0 24 24"
               >
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth={2.5} 
-                  d="M12 6v6m0 0v6m0-6h6m-6 0H6" 
-                  className="animate-spin-slow origin-center"
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  className="animate-draw"
                 />
               </svg>
+
+              {/* Sparkle effects */}
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-300 rounded-full animate-sparkle opacity-0" />
+              <div
+                className="absolute -bottom-1 -left-1 w-2 h-2 bg-cyan-300 rounded-full animate-sparkle opacity-0"
+                style={{ animationDelay: "1s" }}
+              />
             </div>
           </div>
 
-          {/* ==================== TYPOGRAPHY ==================== */}
-          <h1 className="text-3xl font-black tracking-tight mb-2 text-transparent bg-clip-text bg-gradient-to-br from-white to-gray-400 animate-fade-in">
-            Habit Tracker
+          <h1 className="text-5xl sm:text-6xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-gray-100 to-gray-400 mb-3">
+            HabitFlow
           </h1>
-          <p className="text-gray-400 font-medium mb-10 text-sm sm:text-base animate-fade-in-delay">
-            Preparing your workspace...
+          <p className="text-gray-400 text-base sm:text-lg font-medium text-center max-w-xs">
+            Build consistency. Track progress. Achieve greatness.
           </p>
+        </div>
 
-          {/* ==================== PROGRESS BAR ==================== */}
-          <div className="w-full space-y-3 animate-fade-in-delay-2">
-            <div className="h-1.5 w-full bg-gray-800/50 rounded-full overflow-hidden backdrop-blur-sm border border-white/5">
-              <div 
-                className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full relative"
-                style={{ 
+        {/* ───── Glass Card ───── */}
+        <div
+          className="w-full bg-white/[0.04] backdrop-blur-2xl border border-white/[0.08] rounded-[2rem] p-8 shadow-2xl opacity-0"
+          style={{ animation: "fadeUp 0.8s ease-out 0.5s forwards" }}
+        >
+          {/* Subtle top edge highlight */}
+          <div className="absolute top-0 left-[10%] right-[10%] h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+
+          {/* Checklist animation */}
+          <div className="space-y-4 mb-8">
+            {steps.map((step, i) => (
+              <ChecklistItem
+                key={i}
+                text={step}
+                delay={0.8 + i * 0.4}
+                checked={currentStep > i}
+              />
+            ))}
+          </div>
+
+          {/* Progress bar */}
+          <div className="space-y-3">
+            <div className="h-2 w-full bg-white/[0.06] rounded-full overflow-hidden backdrop-blur-sm border border-white/[0.05]">
+              <div
+                className="h-full rounded-full relative overflow-hidden"
+                style={{
                   width: `${progress}%`,
-                  transition: 'width 50ms linear'
+                  background:
+                    "linear-gradient(90deg, #6366f1, #8b5cf6, #ec4899, #06b6d4)",
+                  backgroundSize: "200% 100%",
+                  animation: "gradientMove 2s linear infinite",
+                  transition: "width 50ms linear",
                 }}
               >
-                {/* Shine effect on progress bar */}
-                <div className="absolute top-0 right-0 bottom-0 w-10 bg-gradient-to-r from-transparent to-white/30 blur-[2px]" />
+                {/* Shimmer */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
               </div>
             </div>
-            
-            {/* Status indicators */}
-            <div className="flex justify-between items-center px-1">
-              <span className="text-xs font-semibold text-gray-500 tracking-wider uppercase">
-                {progress < 100 ? 'Authenticating' : 'Redirecting'}
-              </span>
-              <span className="text-xs font-bold text-gray-400">
+
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.15em]">
+                  {steps[currentStep] || "Ready"}
+                </span>
+              </div>
+              <span className="text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 tabular-nums">
                 {Math.round(progress)}%
               </span>
             </div>
           </div>
+        </div>
 
+        {/* Footer */}
+        <div
+          className="mt-8 flex items-center gap-2 text-gray-600 opacity-0"
+          style={{ animation: "fadeUp 0.6s ease-out 1s forwards" }}
+        >
+          <svg
+            className="w-3.5 h-3.5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+            />
+          </svg>
+          <span className="text-[11px] font-semibold tracking-wider uppercase">
+            End-to-end encrypted
+          </span>
         </div>
       </div>
 
-      {/* ==================== CUSTOM ANIMATIONS ==================== */}
+      {/* ───── Animations ───── */}
       <style jsx>{`
-        @keyframes blob {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          33% { transform: translate(30px, -50px) scale(1.1); }
-          66% { transform: translate(-20px, 20px) scale(0.9); }
+        @keyframes orbFloat {
+          0%,
+          100% {
+            transform: translate(0, 0) scale(1) rotate(0deg);
+          }
+          25% {
+            transform: translate(40px, -60px) scale(1.1) rotate(90deg);
+          }
+          50% {
+            transform: translate(-30px, 40px) scale(0.9) rotate(180deg);
+          }
+          75% {
+            transform: translate(50px, 20px) scale(1.05) rotate(270deg);
+          }
         }
 
-        @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-10px) rotate(2deg); }
+        @keyframes fadeUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+            filter: blur(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+            filter: blur(0px);
+          }
         }
 
-        @keyframes spin-slow {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateX(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
         }
 
-        @keyframes ping-slow {
-          0% { transform: scale(1); opacity: 0.8; }
-          100% { transform: scale(1.5); opacity: 0; }
+        @keyframes gradientMove {
+          0% {
+            background-position: 0% 50%;
+          }
+          100% {
+            background-position: 200% 50%;
+          }
         }
 
-        @keyframes ping-slower {
-          0% { transform: scale(1); opacity: 0.5; }
-          100% { transform: scale(1.8); opacity: 0; }
+        @keyframes shimmer {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(100%);
+          }
         }
 
-        @keyframes reveal {
-          0% { opacity: 0; transform: translateY(30px) scale(0.95); filter: blur(10px); }
-          100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); }
+        @keyframes sparkle {
+          0%,
+          100% {
+            opacity: 0;
+            transform: scale(0);
+          }
+          50% {
+            opacity: 1;
+            transform: scale(1);
+          }
         }
 
-        @keyframes fade-in {
-          0% { opacity: 0; transform: translateY(10px); }
-          100% { opacity: 1; transform: translateY(0); }
+        @keyframes draw {
+          from {
+            stroke-dashoffset: 100;
+          }
+          to {
+            stroke-dashoffset: 0;
+          }
         }
 
-        .animate-blob {
-          animation: blob 10s infinite ease-in-out;
-        }
-        .animation-delay-2000 { animation-delay: 2s; }
-        .animation-delay-4000 { animation-delay: 4s; }
-
-        .animate-float {
-          animation: float 4s ease-in-out infinite;
+        .animate-shimmer {
+          animation: shimmer 1.5s ease-in-out infinite;
         }
 
-        .animate-spin-slow {
-          animation: spin-slow 8s linear infinite;
+        .animate-sparkle {
+          animation: sparkle 2s ease-in-out infinite;
         }
 
-        .animate-ping-slow {
-          animation: ping-slow 2.5s cubic-bezier(0, 0, 0.2, 1) infinite;
-        }
-
-        .animate-ping-slower {
-          animation: ping-slower 3.5s cubic-bezier(0, 0, 0.2, 1) infinite;
-          animation-delay: 0.5s;
-        }
-
-        .animate-reveal {
-          animation: reveal 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-
-        .animate-fade-in {
-          animation: fade-in 0.8s ease-out 0.2s forwards;
-          opacity: 0;
-        }
-
-        .animate-fade-in-delay {
-          animation: fade-in 0.8s ease-out 0.4s forwards;
-          opacity: 0;
-        }
-
-        .animate-fade-in-delay-2 {
-          animation: fade-in 0.8s ease-out 0.6s forwards;
-          opacity: 0;
+        .animate-draw {
+          stroke-dasharray: 100;
+          animation: draw 2s ease-out 0.5s forwards;
         }
       `}</style>
     </div>

@@ -1,21 +1,39 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
+import ThemeProvider from "@/components/ThemeProvider";
+import { ToastProvider } from "@/components/Toast";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Habit Tracker",
-  description: "Simple habit tracking app",
+  title: "HabitFlow — Build Better Habits",
+  description:
+    "A powerful, beautiful habit tracking app to help you build consistency, track streaks, and achieve your goals. Built with Next.js, Firebase, and modern web technologies.",
+  keywords: [
+    "habit tracker",
+    "productivity",
+    "habits",
+    "streak tracking",
+    "goal setting",
+  ],
+  authors: [{ name: "Kishan Pokal" }],
+  openGraph: {
+    title: "HabitFlow — Build Better Habits",
+    description: "Track habits, build streaks, and become your best self.",
+    type: "website",
+  },
+  manifest: "/manifest.json",
+  other: {
+    "mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-status-bar-style": "black-translucent",
+  },
 };
 
 export default function RootLayout({
@@ -24,11 +42,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <AuthProvider>{children}</AuthProvider>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${inter.variable} font-sans antialiased`}>
+        <ThemeProvider>
+          <ToastProvider>
+            <AuthProvider>{children}</AuthProvider>
+          </ToastProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

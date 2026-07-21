@@ -89,9 +89,9 @@ export default function FocusTimerPage() {
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-[#030712] text-gray-900 dark:text-gray-100">
             <TopNav />
-            <main className="pt-16 sm:pt-20 lg:pt-24 pb-24 lg:pb-12 px-4 sm:px-6 max-w-2xl mx-auto">
+            <main className="pt-16 sm:pt-20 lg:pt-24 pb-24 lg:pb-12 px-4 sm:px-6 max-w-2xl mx-auto safe-bottom">
                 {/* Mode Tabs */}
-                <div className="flex gap-2 justify-center mb-8">
+                <div className="flex flex-wrap gap-2 justify-center mb-6 sm:mb-8">
                     {(Object.entries(MODES) as [TimerMode, typeof MODES.focus][]).map(([key, cfg]) => (
                         <button key={key} onClick={() => switchMode(key)}
                             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${mode === key
@@ -105,8 +105,8 @@ export default function FocusTimerPage() {
                 </div>
 
                 {/* Timer Ring */}
-                <div className="flex justify-center mb-8">
-                    <div className="relative w-[320px] h-[320px]">
+                <div className="flex justify-center mb-6 sm:mb-8 px-4">
+                    <div className="relative w-full max-w-[260px] sm:max-w-[320px] aspect-square">
                         <svg className="w-full h-full -rotate-90" viewBox="0 0 300 300">
                             <circle cx="150" cy="150" r="140" fill="none" stroke="currentColor" strokeWidth="6" className="text-gray-200 dark:text-gray-800" />
                             <circle cx="150" cy="150" r="140" fill="none" strokeWidth="6" strokeLinecap="round"
@@ -114,7 +114,7 @@ export default function FocusTimerPage() {
                             />
                         </svg>
                         <div className="absolute inset-0 flex flex-col items-center justify-center">
-                            <span className="text-6xl sm:text-7xl font-black tabular-nums tracking-tight">
+                            <span className="text-5xl sm:text-7xl font-black tabular-nums tracking-tight">
                                 {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
                             </span>
                             <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-2">

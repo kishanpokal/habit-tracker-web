@@ -114,7 +114,7 @@ export default function JournalPage() {
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-[#030712] text-gray-900 dark:text-gray-100">
             <TopNav />
-            <main className="pt-16 sm:pt-20 lg:pt-24 pb-24 lg:pb-12 px-3 sm:px-6 lg:px-8 max-w-4xl mx-auto space-y-5">
+            <main className="pt-16 sm:pt-20 lg:pt-24 pb-24 lg:pb-12 px-3 sm:px-6 lg:px-8 max-w-4xl mx-auto space-y-5 safe-bottom">
 
                 {/* Header */}
                 <div className="bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 rounded-2xl p-6 text-white relative overflow-hidden">
@@ -136,9 +136,9 @@ export default function JournalPage() {
                 </div>
 
                 {/* Stats Row */}
-                <div className="grid grid-cols-5 gap-2">
+                <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
                     {MOODS.map(m => (
-                        <div key={m.key} className="bg-white dark:bg-[#111827] rounded-xl border border-gray-100 dark:border-gray-800 p-2.5 text-center">
+                        <div key={m.key} className="bg-white dark:bg-[#111827] rounded-xl border border-gray-100 dark:border-gray-800 p-1.5 sm:p-2.5 text-center">
                             <div className="text-lg mb-0.5">{m.emoji}</div>
                             <div className="text-sm font-black">{moodStats[m.key] || 0}</div>
                             <div className="text-[9px] text-gray-400 font-bold">{m.label}</div>
@@ -152,10 +152,10 @@ export default function JournalPage() {
                         {/* Mood */}
                         <div className="bg-white dark:bg-[#111827] rounded-2xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
                             <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">How are you feeling?</h3>
-                            <div className="flex gap-2">
+                            <div className="flex flex-wrap sm:flex-nowrap gap-2">
                                 {MOODS.map(m => (
                                     <button key={m.key} onClick={() => setMood(m.key)}
-                                        className={`flex-1 flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all ${mood === m.key
+                                        className={`flex-1 min-w-[60px] flex flex-col items-center gap-1.5 p-2 sm:p-3 rounded-xl border-2 transition-all ${mood === m.key
                                                 ? `border-transparent bg-gradient-to-br ${m.color} text-white shadow-lg scale-105`
                                                 : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
                                             }`}

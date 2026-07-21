@@ -194,7 +194,7 @@ export default function DashboardPage() {
       <TopNav />
 
       {/* Main Container - Extended max width for TV/Large displays */}
-      <main className="pt-16 sm:pt-20 lg:pt-24 pb-24 lg:pb-12 px-3 sm:px-4 lg:px-8 max-w-[1600px] mx-auto space-y-4 sm:space-y-6 lg:space-y-8">
+      <main className="pt-16 sm:pt-20 lg:pt-24 pb-40 lg:pb-12 px-3 sm:px-4 lg:px-8 max-w-[1600px] mx-auto space-y-4 sm:space-y-6 lg:space-y-8">
 
         {/* ==================== HEADER ==================== */}
         <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-6 bg-white/50 dark:bg-gray-900/50 p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-gray-200/50 dark:border-gray-800/50 backdrop-blur-xl">
@@ -359,30 +359,30 @@ export default function DashboardPage() {
           <div className="flex-1 order-2 lg:order-none min-w-0 space-y-6 lg:space-y-8">
 
             {/* Micro-Stats Grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-              <div className="bg-white dark:bg-gray-900/80 backdrop-blur-xl border border-gray-100 dark:border-gray-800 rounded-3xl p-5 shadow-sm hover:shadow-md transition-shadow">
-                <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-1">Period Progress</p>
-                <div className="flex flex-wrap items-baseline gap-2">
-                  <span className="text-3xl font-black">{progressPercent}%</span>
-                  <span className={`text-xs font-bold px-2 py-1 rounded-full whitespace-nowrap ${delta >= 0 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400'}`}>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+              <div className="bg-white dark:bg-gray-900/80 backdrop-blur-xl border border-gray-100 dark:border-gray-800 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+                <p className="text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 mb-1">Progress</p>
+                <div className="flex flex-wrap items-baseline gap-1.5 sm:gap-2 mt-auto">
+                  <span className="text-2xl sm:text-3xl font-black">{progressPercent}%</span>
+                  <span className={`text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full whitespace-nowrap ${delta >= 0 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400'}`}>
                     {comparisonText}
                   </span>
                 </div>
               </div>
-              <div className="bg-white dark:bg-gray-900/80 backdrop-blur-xl border border-gray-100 dark:border-gray-800 rounded-3xl p-5 shadow-sm hover:shadow-md transition-shadow">
-                <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-1">Active Habits</p>
-                <span className="text-3xl font-black">{habits.length}</span>
+              <div className="bg-white dark:bg-gray-900/80 backdrop-blur-xl border border-gray-100 dark:border-gray-800 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+                <p className="text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 mb-1">Active</p>
+                <span className="text-2xl sm:text-3xl font-black mt-auto">{habits.length}</span>
               </div>
-              <div className="bg-white dark:bg-gray-900/80 backdrop-blur-xl border border-gray-100 dark:border-gray-800 rounded-3xl p-5 shadow-sm hover:shadow-md transition-shadow">
-                <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-1">Done Today</p>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-3xl font-black">{habits.filter((h) => logs[h.id]?.has(today)).length}</span>
-                  <span className="text-gray-400 font-medium">/{habits.length}</span>
+              <div className="bg-white dark:bg-gray-900/80 backdrop-blur-xl border border-gray-100 dark:border-gray-800 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+                <p className="text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 mb-1">Done Today</p>
+                <div className="flex items-baseline gap-1 mt-auto">
+                  <span className="text-2xl sm:text-3xl font-black">{habits.filter((h) => logs[h.id]?.has(today)).length}</span>
+                  <span className="text-xs sm:text-base text-gray-400 font-medium">/{habits.length}</span>
                 </div>
               </div>
-              <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl p-5 shadow-lg text-white flex flex-col justify-center">
-                <p className="text-sm font-medium text-white/80 mb-1">Current Focus</p>
-                <span className="text-xl font-bold leading-tight">Keep the momentum going! 🔥</span>
+              <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-lg text-white flex flex-col justify-center">
+                <p className="text-xs sm:text-sm font-medium text-white/80 mb-1">Focus</p>
+                <span className="text-sm sm:text-xl font-bold leading-tight">Keep going! 🔥</span>
               </div>
             </div>
 
@@ -449,7 +449,7 @@ export default function DashboardPage() {
                     <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl sm:rounded-[2rem] shadow-sm overflow-hidden p-3 sm:p-6 lg:p-8">
                       {/* Mobile Scrollable Container */}
                       <div className="overflow-x-auto pb-4 custom-scrollbar">
-                        <div className="min-w-[600px] lg:min-w-full">
+                        <div className="min-w-[450px] lg:min-w-full">
                           {/* Headers */}
                           <div className="flex gap-3 mb-6 pr-4">
                             <div className="w-[140px] lg:w-[180px] xl:w-[220px] flex-shrink-0" />
@@ -479,9 +479,9 @@ export default function DashboardPage() {
                                 <div key={h.id} className="group flex items-center gap-3 bg-gray-50/50 dark:bg-gray-800/30 rounded-3xl p-3 sm:p-4 border border-transparent hover:border-gray-100 dark:hover:border-gray-700 transition-colors">
 
                                   {/* Habit Name */}
-                                  <div className="flex items-center gap-3 lg:gap-4 w-[140px] lg:w-[180px] xl:w-[220px] flex-shrink-0">
-                                    <div className="w-2.5 h-10 lg:h-12 rounded-full flex-shrink-0" style={{ backgroundColor: h.color }} />
-                                    <span className="font-bold text-[14px] lg:text-[15px] truncate pr-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" title={h.name}>{h.name}</span>
+                                  <div className="flex items-center gap-3 w-[140px] lg:w-[180px] xl:w-[220px] flex-shrink-0">
+                                    <div className="w-1.5 h-8 lg:w-2.5 lg:h-12 rounded-full flex-shrink-0" style={{ backgroundColor: h.color }} />
+                                    <span className="font-bold text-[12px] lg:text-[15px] truncate pr-1 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" title={h.name}>{h.name}</span>
                                   </div>
 
                                   {/* Checks */}
@@ -499,7 +499,7 @@ export default function DashboardPage() {
                                             } ${isToday && !done ? "ring-4 ring-indigo-500/10 border-indigo-200 dark:border-indigo-500/30" : ""}`}
                                           style={done ? { backgroundColor: h.color, borderColor: h.color } : {}}
                                         >
-                                          <svg className={`w-5 h-5 lg:w-6 lg:h-6 transition-transform duration-300 ${done ? 'scale-100' : 'scale-50 opacity-0'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <svg className={`w-4 h-4 lg:w-6 lg:h-6 transition-transform duration-300 ${done ? 'scale-100' : 'scale-50 opacity-0'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                                           </svg>
                                         </button>
@@ -601,9 +601,9 @@ export default function DashboardPage() {
       {/* Floating Action Button (Mobile Only) */}
       <button
         onClick={() => setShowAddHabit(true)}
-        className="sm:hidden fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-full shadow-2xl shadow-indigo-500/40 flex items-center justify-center transition-transform active:scale-90 z-50"
+        className="sm:hidden fixed bottom-24 right-6 w-14 h-14 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-full shadow-2xl shadow-indigo-500/40 flex items-center justify-center transition-transform active:scale-90 z-50"
       >
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
       </button>
 
       {showAddHabit && <AddHabitModal onClose={() => setShowAddHabit(false)} />}

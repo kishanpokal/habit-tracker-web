@@ -104,7 +104,7 @@ export default function GoalsPage() {
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-[#030712] text-gray-900 dark:text-gray-100">
             <TopNav />
-            <main className="pt-16 sm:pt-20 lg:pt-24 pb-24 lg:pb-12 px-3 sm:px-6 lg:px-8 max-w-4xl mx-auto space-y-5">
+            <main className="pt-16 sm:pt-20 lg:pt-24 pb-24 lg:pb-12 px-3 sm:px-6 lg:px-8 max-w-4xl mx-auto space-y-5 safe-bottom">
 
                 {/* Header */}
                 <div className="bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500 rounded-2xl p-6 text-white relative overflow-hidden">
@@ -257,7 +257,7 @@ export default function GoalsPage() {
                                         <div className="space-y-1.5">
                                             {goal.milestones.map((m, i) => (
                                                 <button key={i} onClick={() => toggleMilestone(goal.id, i)}
-                                                    className="w-full flex items-center gap-2.5 text-left p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
+                                                    className="w-full flex items-center gap-3 text-left p-2.5 sm:p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
                                                 >
                                                     {m.done ? <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> : <Circle className="w-4 h-4 text-gray-300 group-hover:text-indigo-400 flex-shrink-0 transition-colors" />}
                                                     <span className={`text-xs font-medium ${m.done ? "line-through text-gray-400" : ""}`}>{m.text}</span>

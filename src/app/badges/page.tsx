@@ -198,7 +198,7 @@ export default function BadgesPage() {
         <div className="min-h-screen bg-gray-50 dark:bg-[#030712] text-gray-900 dark:text-gray-100">
             <TopNav />
 
-            <main className="pt-16 sm:pt-20 lg:pt-24 pb-24 lg:pb-12 px-3 sm:px-6 lg:px-8 max-w-6xl mx-auto space-y-6">
+            <main className="pt-16 sm:pt-20 lg:pt-24 pb-24 lg:pb-12 px-3 sm:px-6 lg:px-8 max-w-6xl mx-auto space-y-6 safe-bottom">
                 {/* Header */}
                 <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-2xl p-6 sm:p-8 text-white relative overflow-hidden">
                     <div className="absolute inset-0 opacity-10">
@@ -226,7 +226,7 @@ export default function BadgesPage() {
                 </div>
 
                 {/* Stats Row */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
                     {[
                         { label: "Habits", value: badgeData.totalHabits, color: "text-indigo-500" },
                         { label: "Completions", value: badgeData.totalCompletions, color: "text-emerald-500" },
@@ -243,7 +243,7 @@ export default function BadgesPage() {
                 </div>
 
                 {/* Category Filter */}
-                <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
                     {CATEGORIES.map(cat => (
                         <button key={cat} onClick={() => setSelectedCategory(cat)}
                             className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${selectedCategory === cat

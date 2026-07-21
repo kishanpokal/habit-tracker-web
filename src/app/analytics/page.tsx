@@ -125,8 +125,8 @@ function StatCard({ icon, title, value, subtitle, gradient, trend, small }: any)
 
 function ChartCard({ title, icon, children, colSpan = 1, description }: any) {
   return (
-    <div className={`bg-white dark:bg-[#111827] rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-800 w-full flex flex-col ${colSpan === 2 ? 'lg:col-span-2' : ''} ${colSpan === 3 ? 'lg:col-span-3' : ''}`}>
-      <div className="flex items-center justify-between mb-5">
+    <div className={`bg-white dark:bg-[#111827] rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100 dark:border-gray-800 w-full flex flex-col overflow-hidden ${colSpan === 2 ? 'lg:col-span-2' : ''} ${colSpan === 3 ? 'lg:col-span-3' : ''}`}>
+      <div className="flex items-center justify-between mb-4 sm:mb-5">
         <div className="flex items-center gap-2.5">
           <div className="p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50 text-indigo-500 dark:text-indigo-400">{icon}</div>
           <div>
@@ -135,7 +135,11 @@ function ChartCard({ title, icon, children, colSpan = 1, description }: any) {
           </div>
         </div>
       </div>
-      <div className="w-full flex-1 min-h-[260px] flex items-center justify-center">{children}</div>
+      <div className="w-full flex-1 min-h-[260px] overflow-x-auto custom-scrollbar">
+        <div className="min-w-[400px] h-full flex items-center justify-center pr-4">
+          {children}
+        </div>
+      </div>
     </div>
   );
 }
@@ -554,7 +558,7 @@ export default function AdvancedAnalyticsPage() {
         </header>
 
         {/* ═══ KEY METRICS ═══ */}
-        <section className="grid grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4">
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
           <StatCard small icon={svgIcon("M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z")}
             title="Completion" value={`${stats.completionRate}%`} gradient="linear-gradient(135deg, #6366f1, #a855f7)" trend={stats.completionRate >= 50 ? "On Track" : "↓ Low"} />
           <StatCard small icon={svgIcon("M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z")}

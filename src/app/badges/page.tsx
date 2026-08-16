@@ -13,6 +13,9 @@ type BadgeData = {
     totalCompletions: number;
     bestStreak: number;
     currentStreak: number;
+    totalPerfectDays: number;
+    bestPerfectStreak: number;
+    currentPerfectStreak: number;
     perfectDayStreak: number;
     totalDaysActive: number;
     categoriesUsed: number;
@@ -58,14 +61,14 @@ const BADGE_DEFINITIONS = [
     { id: "habit_created_10", name: "Creator", desc: "Created 10 habits total (including deleted)", icon: <Sparkles className="w-6 h-6" />, gradient: "from-orange-400 to-amber-600", category: "Collection", check: (d: BadgeData) => d.habitsCreatedCount >= 10 },
 
     // ── PERFECT DAY BADGES (8) ──
-    { id: "perfect_1", name: "Perfect Day", desc: "Complete all habits in a single day", icon: <Sun className="w-6 h-6" />, gradient: "from-yellow-400 to-orange-500", category: "Perfection", check: (d: BadgeData) => d.perfectDayStreak >= 1 },
-    { id: "perfect_3", name: "Hat Trick", desc: "3 perfect days in a row", icon: <Star className="w-6 h-6" />, gradient: "from-amber-400 to-orange-600", category: "Perfection", check: (d: BadgeData) => d.perfectDayStreak >= 3 },
-    { id: "perfect_7", name: "Perfect Week", desc: "7 consecutive perfect days", icon: <Calendar className="w-6 h-6" />, gradient: "from-green-400 to-emerald-600", category: "Perfection", check: (d: BadgeData) => d.perfectDayStreak >= 7 },
-    { id: "perfect_14", name: "Flawless Fortnight", desc: "14 days of perfection", icon: <Shield className="w-6 h-6" />, gradient: "from-blue-400 to-indigo-600", category: "Perfection", check: (d: BadgeData) => d.perfectDayStreak >= 14 },
-    { id: "perfect_21", name: "Three Week Sweep", desc: "21 perfect days — extraordinary", icon: <Gem className="w-6 h-6" />, gradient: "from-purple-400 to-violet-700", category: "Perfection", check: (d: BadgeData) => d.perfectDayStreak >= 21 },
-    { id: "perfect_30", name: "Perfect Month", desc: "30 consecutive perfect days", icon: <Crown className="w-6 h-6" />, gradient: "from-rose-400 to-red-700", category: "Perfection", check: (d: BadgeData) => d.perfectDayStreak >= 30 },
-    { id: "perfect_60", name: "Diamond Standard", desc: "60 perfect days — diamond tier", icon: <Gem className="w-6 h-6" />, gradient: "from-cyan-300 to-blue-700", category: "Perfection", check: (d: BadgeData) => d.perfectDayStreak >= 60 },
-    { id: "perfect_90", name: "Untouchable", desc: "90 perfect days — nobody can stop you", icon: <Crown className="w-6 h-6" />, gradient: "from-yellow-300 to-amber-700", category: "Perfection", check: (d: BadgeData) => d.perfectDayStreak >= 90 },
+    { id: "perfect_1", name: "Perfect Day", desc: "Complete all habits in a single day", icon: <Sun className="w-6 h-6" />, gradient: "from-yellow-400 to-orange-500", category: "Perfection", check: (d: BadgeData) => d.totalPerfectDays >= 1 },
+    { id: "perfect_3", name: "Hat Trick", desc: "3 perfect days in a row", icon: <Star className="w-6 h-6" />, gradient: "from-amber-400 to-orange-600", category: "Perfection", check: (d: BadgeData) => d.bestPerfectStreak >= 3 || d.currentPerfectStreak >= 3 },
+    { id: "perfect_7", name: "Perfect Week", desc: "7 consecutive perfect days", icon: <Calendar className="w-6 h-6" />, gradient: "from-green-400 to-emerald-600", category: "Perfection", check: (d: BadgeData) => d.bestPerfectStreak >= 7 || d.currentPerfectStreak >= 7 },
+    { id: "perfect_14", name: "Flawless Fortnight", desc: "14 days of perfection", icon: <Shield className="w-6 h-6" />, gradient: "from-blue-400 to-indigo-600", category: "Perfection", check: (d: BadgeData) => d.bestPerfectStreak >= 14 || d.totalPerfectDays >= 14 },
+    { id: "perfect_21", name: "Three Week Sweep", desc: "21 perfect days — extraordinary", icon: <Gem className="w-6 h-6" />, gradient: "from-purple-400 to-violet-700", category: "Perfection", check: (d: BadgeData) => d.bestPerfectStreak >= 21 || d.totalPerfectDays >= 21 },
+    { id: "perfect_30", name: "Perfect Month", desc: "30 consecutive perfect days", icon: <Crown className="w-6 h-6" />, gradient: "from-rose-400 to-red-700", category: "Perfection", check: (d: BadgeData) => d.bestPerfectStreak >= 30 || d.totalPerfectDays >= 30 },
+    { id: "perfect_60", name: "Diamond Standard", desc: "60 perfect days — diamond tier", icon: <Gem className="w-6 h-6" />, gradient: "from-cyan-300 to-blue-700", category: "Perfection", check: (d: BadgeData) => d.bestPerfectStreak >= 60 || d.totalPerfectDays >= 60 },
+    { id: "perfect_90", name: "Untouchable", desc: "90 perfect days — nobody can stop you", icon: <Crown className="w-6 h-6" />, gradient: "from-yellow-300 to-amber-700", category: "Perfection", check: (d: BadgeData) => d.bestPerfectStreak >= 90 || d.totalPerfectDays >= 90 },
 
     // ── ACTIVITY & TIME BADGES (8) ──
     { id: "days_7", name: "First Week", desc: "Active for 7 days on HabitFlow", icon: <Clock className="w-6 h-6" />, gradient: "from-sky-400 to-blue-600", category: "Activity", check: (d: BadgeData) => d.totalDaysActive >= 7 },
@@ -108,11 +111,18 @@ export default function BadgesPage() {
     }, [user]);
 
     const badgeData = useMemo((): BadgeData => {
+        const getLocalDateString = (d: Date) => {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, "0");
+            const day = String(d.getDate()).padStart(2, "0");
+            return `${year}-${month}-${day}`;
+        };
+
         const completedLogs = logs.filter((l: any) => l.completed);
         const totalCompletions = completedLogs.length;
 
         // Unique dates with completions
-        const uniqueDates = new Set(completedLogs.map((l: any) => l.date));
+        const uniqueDates = new Set<string>(completedLogs.map((l: any) => l.date).filter(Boolean));
         const totalDaysActive = uniqueDates.size;
 
         // Categories used
@@ -120,56 +130,153 @@ export default function BadgesPage() {
 
         // Weekend completions
         const weekendCompletions = completedLogs.filter((l: any) => {
-            const day = new Date(l.date).getDay();
+            if (!l.date) return false;
+            const [y, m, d] = l.date.split("-").map(Number);
+            const dateObj = new Date(y, m - 1, d);
+            const day = dateObj.getDay();
             return day === 0 || day === 6;
         }).length;
 
-        // Best streak & current streak (across all habits)
-        let bestStreak = 0;
-        let currentStreak = 0;
+        // Best streak & current streak across habits
+        let overallBestStreak = 0;
+        let overallCurrentStreak = 0;
+
+        const todayStr = getLocalDateString(new Date());
+        const yesterdayDate = new Date();
+        yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+        const yesterdayStr = getLocalDateString(yesterdayDate);
+
         habits.forEach(h => {
-            const dates = new Set(completedLogs.filter((l: any) => l.habitId === h.id).map((l: any) => l.date));
-            let streak = 0;
-            for (let i = 0; ; i++) {
-                const d = new Date(); d.setDate(d.getDate() - i);
-                if (dates.has(d.toISOString().split("T")[0])) streak++;
-                else break;
+            const habitDates = Array.from(
+                new Set(completedLogs.filter((l: any) => l.habitId === h.id).map((l: any) => l.date))
+            ).sort();
+            if (habitDates.length === 0) return;
+
+            const dateSet = new Set(habitDates);
+
+            // Historical best streak for this habit
+            let habitBest = 1;
+            let currentRun = 1;
+            for (let i = 1; i < habitDates.length; i++) {
+                const [y1, m1, d1] = habitDates[i - 1].split("-").map(Number);
+                const [y2, m2, d2] = habitDates[i].split("-").map(Number);
+                const prev = new Date(y1, m1 - 1, d1);
+                const curr = new Date(y2, m2 - 1, d2);
+                const diffDays = Math.round((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
+                if (diffDays === 1) {
+                    currentRun++;
+                    habitBest = Math.max(habitBest, currentRun);
+                } else {
+                    currentRun = 1;
+                }
             }
-            bestStreak = Math.max(bestStreak, streak);
-            if (streak > currentStreak) currentStreak = streak;
+            overallBestStreak = Math.max(overallBestStreak, habitBest);
+
+            // Current streak for this habit
+            let habitCurrent = 0;
+            let offset = 0;
+            if (!dateSet.has(todayStr)) {
+                if (dateSet.has(yesterdayStr)) {
+                    offset = 1;
+                } else {
+                    offset = -1;
+                }
+            }
+
+            if (offset >= 0) {
+                for (let i = offset; ; i++) {
+                    const d = new Date();
+                    d.setDate(d.getDate() - i);
+                    const key = getLocalDateString(d);
+                    if (dateSet.has(key)) {
+                        habitCurrent++;
+                    } else {
+                        break;
+                    }
+                }
+            }
+            overallCurrentStreak = Math.max(overallCurrentStreak, habitCurrent);
         });
 
-        // Also check historical best streak (looking backwards from each date)
-        habits.forEach(h => {
-            const sortedDates = completedLogs.filter((l: any) => l.habitId === h.id).map((l: any) => l.date).sort();
-            let streak = 1;
-            for (let i = 1; i < sortedDates.length; i++) {
-                const prev = new Date(sortedDates[i - 1]);
-                const curr = new Date(sortedDates[i]);
-                const diff = (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
-                if (diff === 1) { streak++; bestStreak = Math.max(bestStreak, streak); }
-                else streak = 1;
-            }
-        });
-
-        // Perfect day streak
-        let perfectDayStreak = 0;
+        // ── Perfect Days Calculation ──
+        const perfectDates = new Set<string>();
         if (habits.length > 0) {
-            for (let i = 0; ; i++) {
-                const d = new Date(); d.setDate(d.getDate() - i);
-                const key = d.toISOString().split("T")[0];
-                const dayDone = completedLogs.filter((l: any) => l.date === key).length;
-                if (dayDone >= habits.length) perfectDayStreak++;
-                else break;
+            uniqueDates.forEach((dateStr: string) => {
+                const completedHabitIdsOnDate = new Set(
+                    completedLogs.filter((l: any) => l.date === dateStr).map((l: any) => l.habitId)
+                );
+
+                // Habits that were active on or before this date
+                const habitsOnDate = habits.filter((h: any) => {
+                    if (!h.createdAt) return true;
+                    const createdDate = h.createdAt.toDate
+                        ? getLocalDateString(h.createdAt.toDate())
+                        : typeof h.createdAt === "string"
+                        ? h.createdAt.split("T")[0]
+                        : getLocalDateString(new Date(h.createdAt));
+                    return createdDate <= dateStr;
+                });
+
+                const targetHabits = habitsOnDate.length > 0 ? habitsOnDate : habits;
+                if (targetHabits.length > 0 && targetHabits.every((h: any) => completedHabitIdsOnDate.has(h.id))) {
+                    perfectDates.add(dateStr);
+                }
+            });
+        }
+
+        const totalPerfectDays = perfectDates.size;
+
+        // Best perfect streak
+        const sortedPerfect = Array.from(perfectDates).sort();
+        let bestPerfectStreak = sortedPerfect.length > 0 ? 1 : 0;
+        let curPStreak = sortedPerfect.length > 0 ? 1 : 0;
+        for (let i = 1; i < sortedPerfect.length; i++) {
+            const [y1, m1, d1] = sortedPerfect[i - 1].split("-").map(Number);
+            const [y2, m2, d2] = sortedPerfect[i].split("-").map(Number);
+            const prev = new Date(y1, m1 - 1, d1);
+            const curr = new Date(y2, m2 - 1, d2);
+            const diffDays = Math.round((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
+            if (diffDays === 1) {
+                curPStreak++;
+                bestPerfectStreak = Math.max(bestPerfectStreak, curPStreak);
+            } else {
+                curPStreak = 1;
+            }
+        }
+
+        // Current perfect streak
+        let currentPerfectStreak = 0;
+        let pOffset = 0;
+        if (!perfectDates.has(todayStr)) {
+            if (perfectDates.has(yesterdayStr)) {
+                pOffset = 1;
+            } else {
+                pOffset = -1;
+            }
+        }
+
+        if (pOffset >= 0) {
+            for (let i = pOffset; ; i++) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const key = getLocalDateString(d);
+                if (perfectDates.has(key)) {
+                    currentPerfectStreak++;
+                } else {
+                    break;
+                }
             }
         }
 
         return {
             totalHabits: habits.length,
             totalCompletions,
-            bestStreak,
-            currentStreak,
-            perfectDayStreak,
+            bestStreak: overallBestStreak,
+            currentStreak: overallCurrentStreak,
+            totalPerfectDays,
+            bestPerfectStreak,
+            currentPerfectStreak,
+            perfectDayStreak: Math.max(bestPerfectStreak, currentPerfectStreak),
             totalDaysActive,
             categoriesUsed,
             morningCompletions: Math.floor(totalCompletions * 0.4), // Approximation
@@ -231,7 +338,7 @@ export default function BadgesPage() {
                         { label: "Habits", value: badgeData.totalHabits, color: "text-indigo-500" },
                         { label: "Completions", value: badgeData.totalCompletions, color: "text-emerald-500" },
                         { label: "Best Streak", value: `${badgeData.bestStreak}d`, color: "text-orange-500" },
-                        { label: "Perfect Days", value: badgeData.perfectDayStreak, color: "text-pink-500" },
+                        { label: "Perfect Days", value: badgeData.totalPerfectDays, color: "text-pink-500" },
                         { label: "Days Active", value: badgeData.totalDaysActive, color: "text-blue-500" },
                         { label: "Categories", value: badgeData.categoriesUsed, color: "text-purple-500" },
                     ].map(s => (

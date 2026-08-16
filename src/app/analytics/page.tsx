@@ -19,20 +19,29 @@ type HabitLog = { habitId: string; date: string; completed: boolean };
 type TimeRange = "7d" | "30d" | "90d" | "year" | "custom";
 
 /* ─── Utils ─── */
+function getLocalDateString(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function generateDateRange(days: number) {
   return Array.from({ length: days }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - (days - 1 - i));
-    return d.toISOString().split("T")[0];
+    return getLocalDateString(d);
   });
 }
 
 function generateCustomDateRange(start: string, end: string) {
   const dates: string[] = [];
-  let curr = new Date(start);
-  const endD = new Date(end);
+  const [sy, sm, sd] = start.split("-").map(Number);
+  const [ey, em, ed] = end.split("-").map(Number);
+  const curr = new Date(sy, sm - 1, sd);
+  const endD = new Date(ey, em - 1, ed);
   while (curr <= endD) {
-    dates.push(curr.toISOString().split("T")[0]);
+    dates.push(getLocalDateString(curr));
     curr.setDate(curr.getDate() + 1);
   }
   return dates;
@@ -40,11 +49,25 @@ function generateCustomDateRange(start: string, end: string) {
 
 function calculateStreak(dates: string[]) {
   const set = new Set(dates);
+  const todayStr = getLocalDateString(new Date());
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = getLocalDateString(yesterday);
+
+  let startOffset = 0;
+  if (!set.has(todayStr)) {
+    if (set.has(yesterdayStr)) {
+      startOffset = 1;
+    } else {
+      return 0;
+    }
+  }
+
   let streak = 0;
-  for (let i = 0; ; i++) {
+  for (let i = startOffset; ; i++) {
     const d = new Date();
     d.setDate(d.getDate() - i);
-    const key = d.toISOString().split("T")[0];
+    const key = getLocalDateString(d);
     if (set.has(key)) streak++;
     else break;
   }
@@ -53,19 +76,23 @@ function calculateStreak(dates: string[]) {
 
 function calculateBestStreak(dates: string[], rangeDays?: string[]) {
   const filtered = rangeDays ? dates.filter(d => rangeDays.includes(d)) : dates;
-  const sorted = [...new Set(filtered)].sort();
-  let max = 0, curr = 0;
-  let prev: Date | null = null;
-  sorted.forEach(ds => {
-    const cd = new Date(ds);
-    if (prev) {
-      const diff = (cd.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
-      if (diff === 1) curr++;
-      else { max = Math.max(max, curr); curr = 1; }
-    } else curr = 1;
-    prev = cd;
-  });
-  return Math.max(max, curr);
+  const sorted = Array.from(new Set(filtered)).sort();
+  if (sorted.length === 0) return 0;
+  let max = 1, curr = 1;
+  for (let i = 1; i < sorted.length; i++) {
+    const [y1, m1, d1] = sorted[i - 1].split("-").map(Number);
+    const [y2, m2, d2] = sorted[i].split("-").map(Number);
+    const prev = new Date(y1, m1 - 1, d1);
+    const cd = new Date(y2, m2 - 1, d2);
+    const diff = Math.round((cd.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
+    if (diff === 1) {
+      curr++;
+      max = Math.max(max, curr);
+    } else {
+      curr = 1;
+    }
+  }
+  return max;
 }
 
 const COLORS = ["#6366f1", "#8b5cf6", "#ec4899", "#14b8a6", "#f59e0b", "#10b981", "#3b82f6", "#f43f5e", "#0ea5e9", "#84cc16", "#d946ef", "#06b6d4"];
@@ -270,10 +297,24 @@ export default function AdvancedAnalyticsPage() {
     const allDates = filteredLogs.filter(l => l.completed).map(l => l.date);
 
     let perfectDays = 0;
-    if (selectedHabitId === "all") {
+    if (selectedHabitId === "all" && habits.length > 0) {
       rangeDays.forEach(date => {
-        const dayDone = logs.filter(l => l.date === date && l.completed).length;
-        if (dayDone === habits.length && habits.length > 0) perfectDays++;
+        const completedHabitIds = new Set(
+          logs.filter(l => l.date === date && l.completed).map(l => l.habitId)
+        );
+        const habitsOnDate = habits.filter((h: any) => {
+          if (!h.createdAt) return true;
+          const createdDate = h.createdAt.toDate
+            ? getLocalDateString(h.createdAt.toDate())
+            : typeof h.createdAt === "string"
+            ? h.createdAt.split("T")[0]
+            : getLocalDateString(new Date(h.createdAt));
+          return createdDate <= date;
+        });
+        const targetHabits = habitsOnDate.length > 0 ? habitsOnDate : habits;
+        if (targetHabits.length > 0 && targetHabits.every((h: any) => completedHabitIds.has(h.id))) {
+          perfectDays++;
+        }
       });
     }
 

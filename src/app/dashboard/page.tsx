@@ -161,6 +161,14 @@ export default function DashboardPage() {
     if (!set) return 0;
     let streak = 0;
     let cursor = asOfDate;
+    if (!set.has(cursor)) {
+      const yesterday = addDays(cursor, -1);
+      if (set.has(yesterday)) {
+        cursor = yesterday;
+      } else {
+        return 0;
+      }
+    }
     while (set.has(cursor)) {
       streak++;
       cursor = addDays(cursor, -1);

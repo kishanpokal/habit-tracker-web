@@ -3,36 +3,57 @@
 /* Tell Tailwind v4 to use class-based dark mode (next-themes adds .dark to <html>) */
 @custom-variant dark (&:where(.dark, .dark *));
 
-:root {
-  --background: #ffffff;
-  --foreground: #0f172a;
-  --card: #ffffff;
-  --card-border: #e2e8f0;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --accent: #6366f1;
-  --accent-secondary: #8b5cf6;
-}
+@layer base {
+  :root {
+    /* 60% Base Canvas: Frosted Alabaster Silk */
+    --background: #f9f9fb;
+    --foreground: #0b0b0f;
+    /* 30% Structure & Surface */
+    --card: #ffffff;
+    --card-border: #e4e4e7;
+    --muted: #f4f4f5;
+    --muted-foreground: #71717a;
+    /* 10% Accent (Royal Amethyst & Luminous Gilded Gold) */
+    --primary: #7c3aed;
+    --primary-gradient: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+    --secondary: #eab308;
+    --accent: #a855f7;
+    --success: #eab308;
+    --ring: rgba(124, 58, 237, 0.25);
+  }
 
-.dark {
-  --background: #030712;
-  --foreground: #f1f5f9;
-  --card: #111827;
-  --card-border: #1f2937;
-  --muted: #1e293b;
-  --muted-foreground: #94a3b8;
-  --accent: #818cf8;
-  --accent-secondary: #a78bfa;
+  .dark {
+    /* 60% Base Canvas: Deep Obsidian Void */
+    --background: #0b0b0f;
+    --foreground: #f9f9fb;
+    /* 30% Structure & Surface: Smoked Titanium Slate */
+    --card: #121218;
+    --card-border: #272732;
+    --muted: #1a1a22;
+    --muted-foreground: #9090a0;
+    /* 10% Accent: Royal Amethyst & Luminous Gilded Gold */
+    --primary: #7c3aed;
+    --primary-gradient: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+    --secondary: #eab308;
+    --accent: #a855f7;
+    --success: #eab308;
+    --ring: rgba(124, 58, 237, 0.35);
+  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
+  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Premium scrollbar */
+h1, h2, h3, h4, .font-heading {
+  font-family: var(--font-outfit), var(--font-inter), sans-serif;
+}
+
+/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -43,52 +64,78 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.3);
+  background: rgba(124, 58, 237, 0.25);
   border-radius: 9999px;
 }
 
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(124, 58, 237, 0.5);
+}
+
 .dark ::-webkit-scrollbar-thumb {
-  background: rgba(71, 85, 105, 0.5);
+  background: rgba(124, 58, 237, 0.3);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(124, 58, 237, 0.6);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(124, 58, 237, 0.25) transparent;
 }
 
 /* Selection color */
 ::selection {
-  background-color: rgba(99, 102, 241, 0.3);
+  background-color: rgba(124, 58, 237, 0.25);
+  color: inherit;
 }
 
-/* Smooth page transitions */
+/* Safe areas for modern mobile devices (iPhone notch, Android nav pill) */
+.safe-bottom {
+  padding-bottom: max(env(safe-area-inset-bottom, 20px), 16px);
+}
+
+.custom-scrollbar::-webkit-scrollbar { 
+  height: 5px; 
+  width: 5px; 
+}
+
+.custom-scrollbar::-webkit-scrollbar-track { 
+  background: transparent; 
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb { 
+  background-color: rgba(138, 146, 166, 0.35); 
+  border-radius: 20px; 
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb { 
+  background-color: rgba(45, 50, 68, 0.7); 
+}
+
+/* Smooth page entrance animation */
 main {
-  animation: pageIn 0.4s ease-out;
+  animation: pageIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes pageIn {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(6px);
   }
-
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
-/* Mobile Responsiveness Utilities */
-.safe-bottom {
-  padding-bottom: env(safe-area-inset-bottom, 20px);
+/* Radiant Shimmer Utility */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
 }
 
-.custom-scrollbar::-webkit-scrollbar { 
-  height: 6px; 
-  width: 6px; 
-}
-.custom-scrollbar::-webkit-scrollbar-track { 
-  background: transparent; 
-}
-.custom-scrollbar::-webkit-scrollbar-thumb { 
-  background-color: rgba(156, 163, 175, 0.3); 
-  border-radius: 20px; 
-}
-.dark .custom-scrollbar::-webkit-scrollbar-thumb { 
-  background-color: rgba(75, 85, 99, 0.5); 
+.animate-shimmer {
+  animation: shimmer 2.2s infinite ease-in-out;
 }

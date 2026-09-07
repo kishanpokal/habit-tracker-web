@@ -1,229 +1,237 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
-import { X, Sparkles, Clock, FileText, Calendar, Palette, Tag } from "lucide-react";
+import { X, Sparkles, Check } from "lucide-react";
 
 type EditHabitModalProps = {
-    habit: {
-        id: string;
-        name: string;
-        color: string;
-        targetDays: number;
-        reminderTime: string | null;
-        notes: string;
-        category?: string;
-    };
-    onClose: () => void;
+  habit: {
+    id: string;
+    name: string;
+    color: string;
+    targetDays: number;
+    reminderTime: string | null;
+    notes: string;
+    category?: string;
+  };
+  onClose: () => void;
 };
 
-const CATEGORIES = ["Health", "Productivity", "Fitness", "Learning", "Mindfulness", "Social", "Finance", "Creative", "Other"];
+const CATEGORIES = [
+  "Health",
+  "Productivity",
+  "Fitness",
+  "Learning",
+  "Mindfulness",
+  "Social",
+  "Finance",
+  "Creative",
+  "Other",
+];
+
+const AMETHYST_GOLD_COLORS = [
+  "#7C3AED", // Royal Amethyst
+  "#EAB308", // Luminous Gold
+  "#A855F7", // Vivid Purple
+  "#FACC15", // Brilliant Aurum
+  "#6D28D9", // Deep Violet
+  "#CA8A04", // Antique Bronze Gold
+  "#C084FC", // Soft Amethyst
+  "#71717A", // Smoked Titanium
+];
 
 export default function EditHabitModal({ habit, onClose }: EditHabitModalProps) {
-    const { user } = useAuth();
+  const { user } = useAuth();
 
-    const [name, setName] = useState(habit.name);
-    const [color, setColor] = useState(habit.color);
-    const [targetDays, setTargetDays] = useState(habit.targetDays);
-    const [reminderTime, setReminderTime] = useState(habit.reminderTime || "");
-    const [notes, setNotes] = useState(habit.notes || "");
-    const [category, setCategory] = useState(habit.category || "Other");
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
-    const [success, setSuccess] = useState(false);
+  const [name, setName] = useState(habit.name);
+  const [color, setColor] = useState(habit.color || "#7C3AED");
+  const [targetDays, setTargetDays] = useState(habit.targetDays);
+  const [reminderTime, setReminderTime] = useState(habit.reminderTime || "");
+  const [notes, setNotes] = useState(habit.notes || "");
+  const [category, setCategory] = useState(habit.category || "Health");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
 
-    const popularColors = [
-        "#ef4444", "#f59e0b", "#22c55e", "#3b82f6",
-        "#8b5cf6", "#ec4899", "#14b8a6", "#f97316",
-    ];
+  const handleSave = async () => {
+    if (!user) return;
+    if (!name.trim()) {
+      setError("Habit name is required");
+      return;
+    }
 
-    const handleSave = async () => {
-        if (!user) return;
-        if (!name.trim()) {
-            setError("Habit name is required");
-            return;
-        }
+    try {
+      setLoading(true);
+      setError("");
 
-        try {
-            setLoading(true);
-            setError("");
+      await updateDoc(doc(db, "users", user.uid, "habits", habit.id), {
+        name: name.trim(),
+        color,
+        targetDays,
+        reminderTime: reminderTime || null,
+        notes,
+        category,
+      });
 
-            await updateDoc(doc(db, "users", user.uid, "habits", habit.id), {
-                name: name.trim(),
-                color,
-                targetDays,
-                reminderTime: reminderTime || null,
-                notes,
-                category,
-            });
+      setSuccess(true);
+      setTimeout(() => onClose(), 800);
+    } catch (err) {
+      setError("Failed to update habit. Please try again.");
+      setLoading(false);
+    }
+  };
 
-            setSuccess(true);
-            setTimeout(() => onClose(), 1000);
-        } catch (err) {
-            setError("Failed to update habit. Please try again.");
-            setLoading(false);
-        }
-    };
-
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4" style={{ animation: "fadeIn 0.2s ease-out" }}>
-            <div className="w-full max-w-2xl rounded-2xl bg-white dark:bg-gray-900 shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden max-h-[95vh] flex flex-col" style={{ animation: "scaleIn 0.3s cubic-bezier(0.34,1.56,0.64,1)" }}>
-
-                {/* Success Overlay */}
-                {success && (
-                    <div className="absolute inset-0 bg-emerald-500/10 backdrop-blur-sm z-50 flex items-center justify-center" style={{ animation: "fadeIn 0.2s ease-out" }}>
-                        <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-2xl text-center">
-                            <div className="w-16 h-16 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                </svg>
-                            </div>
-                            <p className="text-lg font-bold text-gray-900 dark:text-white">Habit Updated!</p>
-                        </div>
-                    </div>
-                )}
-
-                {/* Header */}
-                <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 p-6 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
-                            <Sparkles className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                            <h2 className="text-xl font-bold text-white">Edit Habit</h2>
-                            <p className="text-white/70 text-xs">Update your habit settings</p>
-                        </div>
-                    </div>
-                    <button onClick={onClose} className="w-9 h-9 rounded-lg bg-white/20 hover:bg-white/30 transition-all flex items-center justify-center">
-                        <X className="w-5 h-5 text-white" />
-                    </button>
-                </div>
-
-                {/* Form */}
-                <div className="p-6 overflow-y-auto flex-1 space-y-5">
-                    {/* Name */}
-                    <div>
-                        <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                            <FileText className="w-3.5 h-3.5" /> Habit Name *
-                        </label>
-                        <input
-                            type="text" value={name} onChange={e => setName(e.target.value)}
-                            className="w-full rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 text-sm focus:border-orange-500 focus:ring-4 focus:ring-orange-500/20 transition-all outline-none"
-                        />
-                    </div>
-
-                    {/* Category */}
-                    <div>
-                        <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                            <Tag className="w-3.5 h-3.5" /> Category
-                        </label>
-                        <div className="flex flex-wrap gap-2">
-                            {CATEGORIES.map(cat => (
-                                <button key={cat} onClick={() => setCategory(cat)}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${category === cat
-                                            ? "bg-orange-500 text-white shadow-md"
-                                            : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
-                                        }`}
-                                >{cat}</button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Color */}
-                    <div>
-                        <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                            <Palette className="w-3.5 h-3.5" /> Color
-                        </label>
-                        <div className="flex flex-wrap gap-2.5">
-                            {popularColors.map(c => (
-                                <button key={c} onClick={() => setColor(c)}
-                                    className={`w-10 h-10 rounded-xl transition-all hover:scale-110 shadow-sm ${color === c ? "ring-3 ring-offset-2 dark:ring-offset-gray-900 scale-110" : ""
-                                        }`}
-                                    style={{ backgroundColor: c }}
-                                >
-                                    {color === c && (
-                                        <svg className="w-5 h-5 text-white mx-auto" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                                        </svg>
-                                    )}
-                                </button>
-                            ))}
-                            <div className="relative w-10 h-10">
-                                <input type="color" value={color} onChange={e => setColor(e.target.value)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                                <div className="w-10 h-10 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center" style={{ backgroundColor: color }}>
-                                    <span className="text-base font-bold text-white drop-shadow">+</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Target Days */}
-                    <div>
-                        <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                            <Calendar className="w-3.5 h-3.5" /> Target Days / Week
-                        </label>
-                        <div className="grid grid-cols-7 gap-2">
-                            {[1, 2, 3, 4, 5, 6, 7].map(day => (
-                                <button key={day} onClick={() => setTargetDays(day)}
-                                    className={`py-3 rounded-xl font-semibold text-sm transition-all ${targetDays === day
-                                            ? "bg-gradient-to-br from-orange-500 to-rose-500 text-white shadow-lg scale-105"
-                                            : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-                                        }`}
-                                >{day}</button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Reminder & Notes */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                                <Clock className="w-3.5 h-3.5" /> Reminder Time
-                            </label>
-                            <input type="time" value={reminderTime} onChange={e => setReminderTime(e.target.value)}
-                                className="w-full rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 text-sm outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/20 transition-all"
-                            />
-                        </div>
-                        <div>
-                            <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                                <FileText className="w-3.5 h-3.5" /> Notes
-                            </label>
-                            <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Why this habit matters..."
-                                className="w-full rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 min-h-[76px] text-sm outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/20 transition-all resize-none"
-                            />
-                        </div>
-                    </div>
-
-                    {error && (
-                        <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-xs font-medium flex items-center gap-2">
-                            <span>⚠</span> {error}
-                        </div>
-                    )}
-                </div>
-
-                {/* Actions */}
-                <div className="px-6 pb-6 pt-3 flex gap-3 border-t border-gray-100 dark:border-gray-800">
-                    <button onClick={onClose} className="flex-1 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all text-sm">
-                        Cancel
-                    </button>
-                    <button onClick={handleSave} disabled={loading || !name.trim()}
-                        className="flex-1 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-rose-500 text-white font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-50 text-sm flex items-center justify-center gap-2"
-                    >
-                        {loading ? (
-                            <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Saving...</>
-                        ) : (
-                            <><Sparkles className="w-4 h-4" /> Save Changes</>
-                        )}
-                    </button>
-                </div>
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4 overflow-y-auto">
+      <div className="w-full max-w-lg rounded-3xl bg-white dark:bg-[#121218] shadow-2xl border border-stone-200 dark:border-[#272732] overflow-hidden my-auto flex flex-col max-h-[92vh]">
+        
+        {success && (
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-[#121218] rounded-3xl p-8 border border-[#272732] shadow-2xl text-center max-w-xs w-full">
+              <div className="w-14 h-14 bg-[#7C3AED]/15 text-[#7C3AED] border border-[#7C3AED]/30 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                <Check className="w-7 h-7" />
+              </div>
+              <h3 className="text-lg font-black font-heading text-white mb-1">Habit Updated!</h3>
+              <p className="text-xs text-[#9090A0]">Settings saved successfully.</p>
             </div>
+          </div>
+        )}
 
-            <style jsx>{`
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-      `}</style>
+        {/* Modal Header */}
+        <div className="bg-gradient-to-r from-[#7C3AED] via-[#6D28D9] to-[#EAB308] p-5 sm:p-6 text-white flex items-center justify-between flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h2 className="text-lg sm:text-xl font-black font-heading">Edit Habit</h2>
+              <p className="text-white/80 text-xs font-semibold">Update your habit parameters</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-lg bg-black/20 hover:bg-black/30 flex items-center justify-center transition-colors text-white"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
-    );
+
+        {/* Form Body */}
+        <div className="p-5 sm:p-6 overflow-y-auto space-y-4 flex-1">
+          <div>
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 block">
+              Habit Name *
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full rounded-xl border border-stone-200 dark:border-[#272732] bg-slate-50 dark:bg-[#1A1A22] px-3.5 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white outline-none focus:border-[#7C3AED]"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 block">
+              Category
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              {CATEGORIES.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setCategory(cat)}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                    category === cat
+                      ? "bg-gradient-to-r from-[#7C3AED] to-[#6D28D9] text-white shadow-xs"
+                      : "bg-slate-100 dark:bg-[#1A1A22] text-slate-600 dark:text-[#9090A0] hover:bg-slate-200 dark:hover:bg-[#272732]"
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 block">
+              Theme Color
+            </label>
+            <div className="flex flex-wrap gap-2.5">
+              {AMETHYST_GOLD_COLORS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setColor(c)}
+                  className={`w-9 h-9 rounded-xl transition-transform hover:scale-105 flex items-center justify-center shadow-xs ${
+                    color === c ? "ring-3 ring-offset-2 dark:ring-offset-[#121218] scale-105" : ""
+                  }`}
+                  style={{ backgroundColor: c }}
+                >
+                  {color === c && <Check className="w-4 h-4 text-white" />}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 block">
+              Target Frequency (Days / Week)
+            </label>
+            <div className="grid grid-cols-7 gap-1.5">
+              {[1, 2, 3, 4, 5, 6, 7].map((day) => (
+                <button
+                  key={day}
+                  type="button"
+                  onClick={() => setTargetDays(day)}
+                  className={`py-2 rounded-xl text-xs font-bold transition-all ${
+                    targetDays === day
+                      ? "bg-gradient-to-r from-[#7C3AED] to-[#6D28D9] text-white shadow-xs"
+                      : "bg-slate-100 dark:bg-[#1A1A22] text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-[#272732]"
+                  }`}
+                >
+                  {day}d
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 block">
+              Notes
+            </label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="w-full rounded-xl border border-stone-200 dark:border-[#272732] bg-slate-50 dark:bg-[#1A1A22] px-3.5 py-2 text-xs sm:text-sm text-slate-900 dark:text-white outline-none focus:border-[#7C3AED] resize-none min-h-[60px]"
+            />
+          </div>
+
+          {error && (
+            <div className="p-3 rounded-xl bg-purple-50 dark:bg-[#7C3AED]/10 border border-purple-200 dark:border-[#7C3AED]/20 text-purple-600 dark:text-[#A855F7] text-xs font-semibold">
+              ⚠️ {error}
+            </div>
+          )}
+        </div>
+
+        {/* Modal Actions */}
+        <div className="p-5 sm:p-6 pt-3 border-t border-stone-100 dark:border-[#272732] flex gap-2.5 flex-shrink-0">
+          <button
+            onClick={onClose}
+            className="flex-1 py-2.5 rounded-xl border border-stone-200 dark:border-[#272732] text-xs font-bold text-slate-600 dark:text-[#9090A0] hover:bg-slate-50 dark:hover:bg-[#1A1A22] transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={loading || !name.trim()}
+            className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#6D28D9] hover:brightness-110 text-white font-black text-xs shadow-md shadow-violet-500/25 transition-all disabled:opacity-50"
+          >
+            {loading ? "Updating..." : "Save Changes"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }

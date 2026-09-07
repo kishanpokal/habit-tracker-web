@@ -9,9 +9,22 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   AreaChart, Area, CartesianGrid, PieChart, Pie, Cell,
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
-  LineChart, Line, Legend,
+  LineChart, Line,
 } from "recharts";
 import jsPDF from "jspdf";
+import {
+  TrendingUp,
+  Award,
+  Zap,
+  Calendar,
+  FileSpreadsheet,
+  FileText,
+  Sparkles,
+  PieChart as PieIcon,
+  Layers,
+  ShieldCheck,
+  Flame,
+} from "lucide-react";
 
 /* ─── Types ─── */
 type Habit = { id: string; name: string; color?: string; category?: string };
@@ -75,7 +88,7 @@ function calculateStreak(dates: string[]) {
 }
 
 function calculateBestStreak(dates: string[], rangeDays?: string[]) {
-  const filtered = rangeDays ? dates.filter(d => rangeDays.includes(d)) : dates;
+  const filtered = rangeDays ? dates.filter((d) => rangeDays.includes(d)) : dates;
   const sorted = Array.from(new Set(filtered)).sort();
   if (sorted.length === 0) return 0;
   let max = 1, curr = 1;
@@ -95,22 +108,32 @@ function calculateBestStreak(dates: string[], rangeDays?: string[]) {
   return max;
 }
 
-const COLORS = ["#6366f1", "#8b5cf6", "#ec4899", "#14b8a6", "#f59e0b", "#10b981", "#3b82f6", "#f43f5e", "#0ea5e9", "#84cc16", "#d946ef", "#06b6d4"];
+/* 60-30-10 Royal Amethyst & Luminous Gilded Gold Palette (Zero Red/Green/Blue/Orange) */
+const AMETHYST_GOLD_COLORS = [
+  "#7C3AED", // Royal Amethyst (Primary hero)
+  "#EAB308", // Luminous Gilded Gold (Complementary accent)
+  "#A855F7", // Bright Amethyst Orchid
+  "#FACC15", // Warm Radiant Gold
+  "#6D28D9", // Deep Imperial Violet
+  "#CA8A04", // Antique Burnished Aurum
+  "#71717A", // Smoked Titanium Slate
+  "#C084FC", // Soft Amethyst Glow
+];
 
-/* ─── Reusable Components ─── */
+/* ─── Custom Tooltip ─── */
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload?.length) {
     return (
-      <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border border-gray-200 dark:border-gray-800 rounded-xl p-3 shadow-2xl">
-        <p className="text-gray-900 dark:text-white font-bold text-xs mb-2 border-b border-gray-100 dark:border-gray-800 pb-1.5">{label}</p>
-        <div className="space-y-1.5">
+      <div className="bg-white/95 dark:bg-[#121218]/95 backdrop-blur-xl border border-stone-200 dark:border-[#272732] rounded-xl p-3 shadow-xl text-xs">
+        <p className="text-stone-900 dark:text-white font-bold mb-1.5 border-b border-stone-100 dark:border-[#272732] pb-1">{label}</p>
+        <div className="space-y-1">
           {payload.map((entry: any, i: number) => (
             <div key={i} className="flex items-center gap-3 justify-between">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: entry.color || entry.fill }} />
-                <span className="text-gray-500 dark:text-gray-400 text-xs font-medium">{entry.name}</span>
+                <span className="text-stone-500 dark:text-[#9090A0] font-medium">{entry.name}</span>
               </div>
-              <span className="text-gray-900 dark:text-white font-black text-xs">
+              <span className="text-stone-900 dark:text-white font-black">
                 {entry.value}{(entry.name?.includes("%") || entry.name?.includes("Rate") || entry.name === "Completion") ? "%" : ""}
               </span>
             </div>
@@ -122,48 +145,24 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-function StatCard({ icon, title, value, subtitle, gradient, trend, small }: any) {
-  return (
-    <div className={`relative overflow-hidden bg-white dark:bg-[#111827] rounded-2xl ${small ? 'p-4' : 'p-5'} shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 group`}>
-      <div className="absolute -top-10 -right-10 w-28 h-28 rounded-full opacity-[0.08] blur-2xl group-hover:opacity-[0.15] transition-opacity" style={{ background: gradient }} />
-      <div className="relative z-10">
-        <div className="flex items-start justify-between mb-3">
-          <div className={`${small ? 'p-2.5' : 'p-3'} rounded-xl text-white shadow-md flex items-center justify-center`} style={{ background: gradient }}>
-            {icon}
-          </div>
-          {trend && (
-            <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold ${trend.startsWith("↑") || trend === "On Track"
-              ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20"
-              : "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20"
-              }`}>
-              {trend}
-            </div>
-          )}
-        </div>
-        <p className={`${small ? 'text-[10px]' : 'text-xs'} text-gray-500 dark:text-gray-400 font-semibold mb-0.5 uppercase tracking-wider`}>{title}</p>
-        <div className="flex items-baseline gap-1.5">
-          <h3 className={`${small ? 'text-2xl' : 'text-3xl'} font-black text-gray-900 dark:text-white tracking-tight`}>{value}</h3>
-          {subtitle && <span className="text-xs text-gray-400 font-bold">{subtitle}</span>}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function ChartCard({ title, icon, children, colSpan = 1, description }: any) {
   return (
-    <div className={`bg-white dark:bg-[#111827] rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100 dark:border-gray-800 w-full flex flex-col overflow-hidden ${colSpan === 2 ? 'lg:col-span-2' : ''} ${colSpan === 3 ? 'lg:col-span-3' : ''}`}>
-      <div className="flex items-center justify-between mb-4 sm:mb-5">
+    <div className={`bg-white dark:bg-[#121218] rounded-2xl p-4 sm:p-5 shadow-xs border border-stone-200/80 dark:border-[#272732] flex flex-col overflow-hidden ${
+      colSpan === 2 ? 'lg:col-span-2' : ''
+    } ${colSpan === 3 ? 'lg:col-span-3' : ''}`}>
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50 text-indigo-500 dark:text-indigo-400">{icon}</div>
+          <div className="p-2 rounded-xl bg-violet-500/10 text-[#7C3AED] dark:text-[#EAB308] border border-violet-500/20">
+            {icon}
+          </div>
           <div>
-            <h2 className="text-sm font-bold text-gray-900 dark:text-white">{title}</h2>
-            {description && <p className="text-[10px] text-gray-400 font-medium mt-0.5">{description}</p>}
+            <h2 className="text-xs sm:text-sm font-bold text-stone-900 dark:text-white">{title}</h2>
+            {description && <p className="text-[10px] text-stone-400 dark:text-[#9090A0] font-medium">{description}</p>}
           </div>
         </div>
       </div>
-      <div className="w-full flex-1 min-h-[260px] overflow-x-auto custom-scrollbar">
-        <div className="min-w-[400px] h-full flex items-center justify-center pr-4">
+      <div className="w-full flex-1 min-h-[250px] overflow-x-auto custom-scrollbar">
+        <div className="min-w-[340px] h-full flex items-center justify-center">
           {children}
         </div>
       </div>
@@ -171,42 +170,43 @@ function ChartCard({ title, icon, children, colSpan = 1, description }: any) {
   );
 }
 
-/* ─── GitHub Heatmap ─── */
 function ActivityHeatmap({ logs, habits, rangeDays }: { logs: HabitLog[]; habits: Habit[]; rangeDays: string[] }) {
   const gridDays = useMemo(() => {
     const displayDays = rangeDays.length > 180 ? rangeDays.slice(-180) : rangeDays;
-    return displayDays.map(date => {
-      const dayLogs = logs.filter(l => l.date === date && l.completed);
+    return displayDays.map((date) => {
+      const dayLogs = logs.filter((l) => l.date === date && l.completed);
       const intensity = habits.length === 0 ? 0 : dayLogs.length / habits.length;
       return { date, intensity, completed: dayLogs.length, total: habits.length };
     });
   }, [logs, habits, rangeDays]);
 
   const getColor = (i: number) => {
-    if (i === 0) return 'bg-gray-100 dark:bg-gray-800/50';
-    if (i <= 0.25) return 'bg-indigo-200 dark:bg-indigo-900/40';
-    if (i <= 0.5) return 'bg-indigo-400 dark:bg-indigo-700/60';
-    if (i <= 0.75) return 'bg-indigo-500 dark:bg-indigo-500/80';
-    return 'bg-indigo-600 dark:bg-indigo-400';
+    if (i === 0) return 'bg-slate-100 dark:bg-[#1A1A22]';
+    if (i <= 0.25) return 'bg-[#7C3AED]/25 dark:bg-[#7C3AED]/20';
+    if (i <= 0.5) return 'bg-[#7C3AED]/60 dark:bg-[#7C3AED]/50';
+    if (i <= 0.75) return 'bg-[#EAB308]/75 dark:bg-[#EAB308]/70';
+    return 'bg-[#EAB308] dark:bg-[#EAB308]';
   };
 
   return (
-    <div className="w-full h-full flex flex-col justify-center">
-      <div className="w-full overflow-x-auto pb-3">
+    <div className="w-full h-full flex flex-col justify-center px-2">
+      <div className="w-full overflow-x-auto pb-3 custom-scrollbar">
         <div className="flex gap-1 sm:gap-1.5 min-w-max">
           {gridDays.map((day, i) => (
-            <div key={i} title={`${new Date(day.date).toLocaleDateString()}: ${day.completed}/${day.total}`}
-              className={`w-4 h-4 sm:w-5 sm:h-5 rounded-[3px] transition-all ${getColor(day.intensity)} hover:ring-2 ring-indigo-300/50 hover:scale-125 cursor-pointer`}
+            <div
+              key={i}
+              title={`${new Date(day.date + "T00:00:00").toLocaleDateString()}: ${day.completed}/${day.total} habits completed`}
+              className={`w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-[3px] transition-all ${getColor(day.intensity)} hover:ring-2 ring-violet-400/50 hover:scale-125 cursor-pointer`}
             />
           ))}
         </div>
       </div>
-      <div className="flex justify-between items-center mt-1 text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-        <span>{new Date(gridDays[0]?.date || '').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+      <div className="flex justify-between items-center mt-2 text-[10px] text-slate-400 dark:text-[#9090A0] font-bold uppercase tracking-wider">
+        <span>{new Date((gridDays[0]?.date || "") + "T00:00:00").toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
         <div className="flex items-center gap-1.5">
           <span>Less</span>
-          {['bg-gray-100 dark:bg-gray-800/50', 'bg-indigo-200 dark:bg-indigo-900/40', 'bg-indigo-400 dark:bg-indigo-700/60', 'bg-indigo-600 dark:bg-indigo-400'].map((c, i) => (
-            <div key={i} className={`w-3 h-3 rounded-sm ${c}`} />
+          {['bg-slate-100 dark:bg-[#1A1A22]', 'bg-[#7C3AED]/25 dark:bg-[#7C3AED]/20', 'bg-[#7C3AED]/60 dark:bg-[#7C3AED]/50', 'bg-[#EAB308]'].map((c, i) => (
+            <div key={i} className={`w-3 h-3 rounded-xs ${c}`} />
           ))}
           <span>More</span>
         </div>
@@ -215,43 +215,44 @@ function ActivityHeatmap({ logs, habits, rangeDays }: { logs: HabitLog[]; habits
   );
 }
 
-/* ─── Consistency Score Ring ─── */
-function ConsistencyScore({ score }: { score: number }) {
+function ConsistencyScoreGauge({ score }: { score: number }) {
   const circumference = 2 * Math.PI * 45;
   const offset = circumference - (score / 100) * circumference;
+
   const getColor = () => {
-    if (score >= 80) return { stroke: '#10b981', text: 'Excellent', emoji: '🏆' };
-    if (score >= 60) return { stroke: '#6366f1', text: 'Good', emoji: '💪' };
-    if (score >= 40) return { stroke: '#f59e0b', text: 'Average', emoji: '📈' };
-    return { stroke: '#ef4444', text: 'Needs Work', emoji: '🎯' };
+    if (score >= 80) return { stroke: '#EAB308', text: 'Elite Consistency', emoji: '👑' };
+    if (score >= 60) return { stroke: '#7C3AED', text: 'Strong Rhythm', emoji: '⚡' };
+    if (score >= 40) return { stroke: '#A855F7', text: 'Building Pace', emoji: '📈' };
+    return { stroke: '#6D28D9', text: 'Needs Alignment', emoji: '🎯' };
   };
   const { stroke, text, emoji } = getColor();
 
   return (
-    <div className="flex flex-col items-center gap-3">
-      <div className="relative w-32 h-32">
+    <div className="flex flex-col items-center gap-2 py-2">
+      <div className="relative w-30 h-30 sm:w-34 sm:h-34">
         <svg className="transform -rotate-90 w-full h-full" viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="45" stroke="currentColor" strokeWidth="6" fill="none" className="text-gray-100 dark:text-gray-800" />
-          <circle cx="50" cy="50" r="45" stroke={stroke} strokeWidth="6" fill="none"
+          <circle cx="50" cy="50" r="45" stroke="currentColor" strokeWidth="6" fill="none" className="text-stone-100 dark:text-[#1A1A22]" />
+          <circle
+            cx="50" cy="50" r="45" stroke={stroke} strokeWidth="6" fill="none"
             strokeDasharray={circumference} strokeDashoffset={offset}
             strokeLinecap="round" className="transition-all duration-1000 ease-out"
-            style={{ filter: `drop-shadow(0 0 6px ${stroke}40)` }}
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-3xl font-black text-gray-900 dark:text-white">{score}</span>
-          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Score</span>
+          <span className="text-3xl font-black font-heading text-stone-900 dark:text-white">{score}</span>
+          <span className="text-[9px] font-bold text-stone-400 uppercase tracking-widest">Score</span>
         </div>
       </div>
       <div className="text-center">
-        <span className="text-lg">{emoji}</span>
-        <p className="text-sm font-bold text-gray-700 dark:text-gray-300 mt-1">{text}</p>
+        <p className="text-xs font-bold text-stone-700 dark:text-stone-300 flex items-center justify-center gap-1">
+          <span>{emoji}</span>
+          <span>{text}</span>
+        </p>
       </div>
     </div>
   );
 }
 
-/* ═══════════════════ MAIN PAGE ═══════════════════ */
 export default function AdvancedAnalyticsPage() {
   const { user } = useAuth();
   const [habits, setHabits] = useState<Habit[]>([]);
@@ -261,21 +262,23 @@ export default function AdvancedAnalyticsPage() {
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
   const [selectedHabitId, setSelectedHabitId] = useState("all");
-  const [activeTab, setActiveTab] = useState<"overview" | "habits" | "patterns">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "habits" | "insights">("overview");
 
   useEffect(() => {
     if (!user) return;
-    const unH = onSnapshot(collection(db, "users", user.uid, "habits"), s => {
-      setHabits(s.docs.map(d => ({ id: d.id, name: d.data().name, color: d.data().color, category: d.data().category })));
+    const unH = onSnapshot(collection(db, "users", user.uid, "habits"), (s) => {
+      setHabits(s.docs.map((d) => ({ id: d.id, name: d.data().name, color: d.data().color, category: d.data().category })));
     });
-    const unL = onSnapshot(collection(db, "users", user.uid, "habitLogs"), s => {
-      setLogs(s.docs.map(d => d.data() as HabitLog));
+    const unL = onSnapshot(collection(db, "users", user.uid, "habitLogs"), (s) => {
+      setLogs(s.docs.map((d) => d.data() as HabitLog));
       setLoading(false);
     });
-    return () => { unH(); unL(); };
+    return () => {
+      unH();
+      unL();
+    };
   }, [user]);
 
-  /* ─── Data Processing ─── */
   const rangeDays = useMemo(() => {
     if (timeRange === "custom" && customStart && customEnd) return generateCustomDateRange(customStart, customEnd);
     const map = { "7d": 7, "30d": 30, "90d": 90, "year": 365, "custom": 30 };
@@ -283,24 +286,24 @@ export default function AdvancedAnalyticsPage() {
   }, [timeRange, customStart, customEnd]);
 
   const filteredHabits = useMemo(() =>
-    selectedHabitId === "all" ? habits : habits.filter(h => h.id === selectedHabitId),
+    selectedHabitId === "all" ? habits : habits.filter((h) => h.id === selectedHabitId),
     [habits, selectedHabitId]);
 
   const filteredLogs = useMemo(() =>
-    selectedHabitId === "all" ? logs : logs.filter(l => l.habitId === selectedHabitId),
+    selectedHabitId === "all" ? logs : logs.filter((l) => l.habitId === selectedHabitId),
     [logs, selectedHabitId]);
 
   const stats = useMemo(() => {
     const possible = filteredHabits.length * rangeDays.length;
-    const completed = filteredLogs.filter(l => l.completed && rangeDays.includes(l.date)).length;
+    const completed = filteredLogs.filter((l) => l.completed && rangeDays.includes(l.date)).length;
     const rate = possible === 0 ? 0 : Math.round((completed / possible) * 100);
-    const allDates = filteredLogs.filter(l => l.completed).map(l => l.date);
+    const allDates = filteredLogs.filter((l) => l.completed).map((l) => l.date);
 
     let perfectDays = 0;
     if (selectedHabitId === "all" && habits.length > 0) {
-      rangeDays.forEach(date => {
+      rangeDays.forEach((date) => {
         const completedHabitIds = new Set(
-          logs.filter(l => l.date === date && l.completed).map(l => l.habitId)
+          logs.filter((l) => l.date === date && l.completed).map((l) => l.habitId)
         );
         const habitsOnDate = habits.filter((h: any) => {
           if (!h.createdAt) return true;
@@ -318,15 +321,11 @@ export default function AdvancedAnalyticsPage() {
       });
     }
 
-    // Consistency score (weighted metric)
-    const streakWeight = 0.3;
-    const rateWeight = 0.5;
-    const perfectWeight = 0.2;
     const currentStreak = calculateStreak(allDates);
     const maxPossibleStreak = rangeDays.length;
     const streakScore = maxPossibleStreak > 0 ? Math.min((currentStreak / maxPossibleStreak) * 100, 100) : 0;
     const perfectScore = rangeDays.length > 0 ? (perfectDays / rangeDays.length) * 100 : 0;
-    const consistencyScore = Math.round(rate * rateWeight + streakScore * streakWeight + perfectScore * perfectWeight);
+    const consistencyScore = Math.round(rate * 0.5 + streakScore * 0.3 + perfectScore * 0.2);
 
     return {
       completionRate: rate,
@@ -337,17 +336,16 @@ export default function AdvancedAnalyticsPage() {
       avgDaily: rangeDays.length > 0 ? (completed / rangeDays.length).toFixed(1) : "0.0",
       consistencyScore: Math.min(consistencyScore, 100),
       totalPossible: possible,
-      missedDays: rangeDays.length - perfectDays,
     };
   }, [filteredHabits, filteredLogs, rangeDays, logs, habits, selectedHabitId]);
 
   const trendData = useMemo(() => {
-    return rangeDays.map(d => {
-      const dateObj = new Date(d);
+    return rangeDays.map((d) => {
+      const dateObj = new Date(d + "T00:00:00");
       const name = timeRange === "year"
         ? dateObj.toLocaleDateString("en-US", { month: "short" })
         : dateObj.toLocaleDateString("en-US", { weekday: "short", day: "numeric" });
-      const completed = filteredLogs.filter(l => l.date === d && l.completed).length;
+      const completed = filteredLogs.filter((l) => l.date === d && l.completed).length;
       const rateVal = filteredHabits.length > 0 ? Math.round((completed / filteredHabits.length) * 100) : 0;
       return { name, fullDate: d, completed, rate: rateVal };
     });
@@ -355,75 +353,105 @@ export default function AdvancedAnalyticsPage() {
 
   const weeklyRhythmData = useMemo(() => {
     const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    const rhythm = days.map((day, i) => ({ day, count: 0, avg: 0 }));
+    const rhythm = days.map((day) => ({ day, count: 0, avg: 0 }));
     const weeksCount = Math.max(1, Math.ceil(rangeDays.length / 7));
-    filteredLogs.forEach(l => {
+    filteredLogs.forEach((l) => {
       if (l.completed && rangeDays.includes(l.date)) {
-        const dayIndex = new Date(l.date).getDay();
+        const dayIndex = new Date(l.date + "T00:00:00").getDay();
         rhythm[dayIndex].count += 1;
       }
     });
-    rhythm.forEach(r => r.avg = Math.round(r.count / weeksCount * 10) / 10);
+    rhythm.forEach((r) => r.avg = Math.round((r.count / weeksCount) * 10) / 10);
     return rhythm;
   }, [filteredLogs, rangeDays]);
 
   const habitBreakdown = useMemo(() => {
     return habits.map((h, idx) => {
-      const hLogs = logs.filter(l => l.habitId === h.id && rangeDays.includes(l.date));
-      const done = hLogs.filter(l => l.completed).length;
+      const hLogs = logs.filter((l) => l.habitId === h.id && rangeDays.includes(l.date));
+      const done = hLogs.filter((l) => l.completed).length;
       return {
-        id: h.id, name: h.name.length > 14 ? h.name.slice(0, 14) + "…" : h.name,
-        fullName: h.name, completed: done,
+        id: h.id,
+        name: h.name.length > 14 ? h.name.slice(0, 14) + "…" : h.name,
+        fullName: h.name,
+        completed: done,
         percent: rangeDays.length > 0 ? Math.round((done / rangeDays.length) * 100) : 0,
-        color: h.color || COLORS[idx % COLORS.length],
-        streak: calculateStreak(logs.filter(l => l.habitId === h.id && l.completed).map(l => l.date)),
-        bestStreak: calculateBestStreak(logs.filter(l => l.habitId === h.id && l.completed).map(l => l.date), rangeDays),
-        category: h.category || "Uncategorized",
+        color: h.color || AMETHYST_GOLD_COLORS[idx % AMETHYST_GOLD_COLORS.length],
+        streak: calculateStreak(logs.filter((l) => l.habitId === h.id && l.completed).map((l) => l.date)),
+        bestStreak: calculateBestStreak(logs.filter((l) => l.habitId === h.id && l.completed).map((l) => l.date), rangeDays),
       };
     }).sort((a, b) => b.percent - a.percent);
   }, [habits, logs, rangeDays]);
 
-  // Hourly pattern (hours when habits were completed — simulated based on data volume)
-  const completionTrendByWeek = useMemo(() => {
-    const weeks: { [key: string]: number } = {};
-    rangeDays.forEach(d => {
-      const date = new Date(d);
-      const weekNum = Math.ceil(((date.getTime() - new Date(rangeDays[0]).getTime()) / (1000 * 60 * 60 * 24) + 1) / 7);
-      const key = `W${weekNum}`;
-      if (!weeks[key]) weeks[key] = 0;
-      const dayCompleted = filteredLogs.filter(l => l.date === d && l.completed).length;
-      weeks[key] += dayCompleted;
-    });
-    return Object.entries(weeks).map(([name, total]) => ({ name, total }));
-  }, [rangeDays, filteredLogs]);
+  const generatedInsights = useMemo(() => {
+    const insights: { title: string; desc: string; type: "positive" | "warning" | "tip" }[] = [];
 
-  // Monthly comparison
-  const monthlyComparison = useMemo(() => {
-    const months: { [key: string]: { completed: number; total: number } } = {};
-    rangeDays.forEach(d => {
-      const monthKey = new Date(d).toLocaleDateString("en-US", { month: "short", year: "2-digit" });
-      if (!months[monthKey]) months[monthKey] = { completed: 0, total: 0 };
-      months[monthKey].total += filteredHabits.length;
-      months[monthKey].completed += filteredLogs.filter(l => l.date === d && l.completed).length;
-    });
-    return Object.entries(months).map(([name, { completed, total }]) => ({
-      name, completed, rate: total > 0 ? Math.round((completed / total) * 100) : 0,
-    }));
-  }, [rangeDays, filteredLogs, filteredHabits]);
+    const bestDay = [...weeklyRhythmData].sort((a, b) => b.count - a.count)[0];
+    const lowestDay = [...weeklyRhythmData].sort((a, b) => a.count - b.count)[0];
+    if (bestDay && bestDay.count > 0) {
+      insights.push({
+        title: `Peak Momentum: ${bestDay.day}`,
+        desc: `You register the highest habit completion volume on ${bestDay.day}s with an average of ${bestDay.avg} daily check-ins.`,
+        type: "positive",
+      });
+    }
+    if (lowestDay && lowestDay.count < bestDay?.count * 0.6) {
+      insights.push({
+        title: `Downtime Dip: ${lowestDay.day}`,
+        desc: `Activity dips on ${lowestDay.day}s. Consider scheduling lighter micro-habits on this day to avoid breaking streaks.`,
+        type: "warning",
+      });
+    }
 
-  /* ─── Export Functions ─── */
+    if (habitBreakdown.length > 0) {
+      const topHabit = habitBreakdown[0];
+      if (topHabit.percent >= 70) {
+        insights.push({
+          title: `Anchor Habit: "${topHabit.fullName}"`,
+          desc: `Outstanding ${topHabit.percent}% completion rate. Use this anchor habit to stack other emerging habits right after it.`,
+          type: "positive",
+        });
+      }
+      const lowestHabit = habitBreakdown[habitBreakdown.length - 1];
+      if (lowestHabit && lowestHabit.percent < 40) {
+        insights.push({
+          title: `Needs Attention: "${lowestHabit.fullName}"`,
+          desc: `Currently at ${lowestHabit.percent}% completion. Try reducing its scope to 2 minutes daily to re-ignite consistency.`,
+          type: "tip",
+        });
+      }
+    }
+
+    if (stats.consistencyScore >= 75) {
+      insights.push({
+        title: "Elite Consistency Tier",
+        desc: `Your consistency score of ${stats.consistencyScore}/100 places your daily systems in the top tier of habit builders.`,
+        type: "positive",
+      });
+    } else {
+      insights.push({
+        title: "Compound Growth Opportunity",
+        desc: "Small daily improvements yield exponential results over 30 days. Prioritize checking off at least 1 habit early in the day.",
+        type: "tip",
+      });
+    }
+
+    return insights;
+  }, [weeklyRhythmData, habitBreakdown, stats]);
+
   const exportCSV = useCallback(() => {
     const headers = ["Habit", "Date", "Completed"];
-    const rows = logs.map(l => {
-      const habit = habits.find(h => h.id === l.habitId);
+    const rows = logs.map((l) => {
+      const habit = habits.find((h) => h.id === l.habitId);
       return `"${habit?.name || 'Unknown'}","${l.date}","${l.completed}"`;
     });
     const csv = [headers.join(","), ...rows].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = `habitflow-export-${new Date().toISOString().split("T")[0]}.csv`;
-    a.click(); URL.revokeObjectURL(url);
+    a.href = url;
+    a.download = `habitflow-analytics-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   }, [logs, habits]);
 
   const exportPDF = useCallback(() => {
@@ -431,10 +459,9 @@ export default function AdvancedAnalyticsPage() {
     const w = pdf.internal.pageSize.getWidth();
     let y = 20;
 
-    // Title
-    pdf.setFontSize(22);
+    pdf.setFontSize(20);
     pdf.setFont("helvetica", "bold");
-    pdf.text("HabitFlow Analytics Report", w / 2, y, { align: "center" });
+    pdf.text("HabitFlow Analytics Performance Report", w / 2, y, { align: "center" });
     y += 8;
     pdf.setFontSize(10);
     pdf.setFont("helvetica", "normal");
@@ -442,433 +469,402 @@ export default function AdvancedAnalyticsPage() {
     pdf.text(`Generated on ${new Date().toLocaleDateString("en-US", { dateStyle: "long" })}`, w / 2, y, { align: "center" });
     y += 12;
 
-    // Key Metrics
     pdf.setTextColor(0);
-    pdf.setFontSize(14);
+    pdf.setFontSize(13);
     pdf.setFont("helvetica", "bold");
-    pdf.text("Key Metrics", 14, y);
+    pdf.text("Executive Metrics", 14, y);
     y += 8;
     pdf.setFontSize(10);
     pdf.setFont("helvetica", "normal");
+
     const metrics = [
       ["Completion Rate", `${stats.completionRate}%`],
-      ["Current Streak", `${stats.currentStreak} days`],
-      ["Best Streak", `${stats.bestStreak} days`],
-      ["Daily Average", `${stats.avgDaily} actions`],
+      ["Current Active Streak", `${stats.currentStreak} days`],
+      ["Best Historical Streak", `${stats.bestStreak} days`],
+      ["Daily Average", `${stats.avgDaily} completions/day`],
       ["Total Completed", `${stats.totalCompleted} / ${stats.totalPossible}`],
-      ["Consistency Score", `${stats.consistencyScore}/100`],
+      ["Consistency Score", `${stats.consistencyScore} / 100`],
     ];
+
     metrics.forEach(([label, value]) => {
       pdf.text(`${label}:`, 14, y);
       pdf.setFont("helvetica", "bold");
-      pdf.text(value, 70, y);
+      pdf.text(value, 80, y);
       pdf.setFont("helvetica", "normal");
       y += 6;
     });
-    y += 6;
 
-    // Habit Breakdown
-    pdf.setFontSize(14);
-    pdf.setFont("helvetica", "bold");
-    pdf.text("Habit Breakdown", 14, y);
     y += 8;
-    pdf.setFontSize(9);
+    pdf.setFontSize(13);
     pdf.setFont("helvetica", "bold");
-    pdf.text("Habit", 14, y);
-    pdf.text("Rate", 90, y);
-    pdf.text("Done", 115, y);
-    pdf.text("Streak", 140, y);
-    pdf.text("Best", 165, y);
-    y += 5;
-    pdf.setDrawColor(200);
-    pdf.line(14, y, w - 14, y);
-    y += 4;
-    pdf.setFont("helvetica", "normal");
-    habitBreakdown.forEach(h => {
-      if (y > 270) { pdf.addPage(); y = 20; }
+    pdf.text("Habit Leaderboard", 14, y);
+    y += 8;
+
+    pdf.setFontSize(9);
+    habitBreakdown.forEach((h) => {
+      if (y > 270) {
+        pdf.addPage();
+        y = 20;
+      }
       pdf.text(h.fullName.substring(0, 30), 14, y);
       pdf.text(`${h.percent}%`, 90, y);
-      pdf.text(`${h.completed}`, 115, y);
-      pdf.text(`${h.streak}d`, 140, y);
-      pdf.text(`${h.bestStreak}d`, 165, y);
-      y += 5;
+      pdf.text(`${h.completed} completions`, 120, y);
+      pdf.text(`${h.streak}d streak`, 165, y);
+      y += 6;
     });
 
     pdf.save(`habitflow-analytics-${new Date().toISOString().split("T")[0]}.pdf`);
   }, [stats, habitBreakdown]);
 
-  /* ─── Render Guards ─── */
   if (!user || loading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#030712] flex flex-col items-center justify-center">
-        <div className="w-10 h-10 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mb-4" />
-        <p className="text-gray-500 text-sm font-bold tracking-widest uppercase animate-pulse">Crunching data…</p>
+      <div className="min-h-screen bg-[#F9F9FB] dark:bg-[#0B0B0F] flex items-center justify-center">
+        <div className="w-9 h-9 border-3 border-violet-500/20 border-t-[#7C3AED] rounded-full animate-spin" />
       </div>
     );
   }
 
-  if (habits.length === 0) {
-    return (
-      <>
-        <TopNav />
-        <main className="min-h-screen pt-24 px-4 bg-white dark:bg-[#030712] flex items-center justify-center">
-          <div className="text-center bg-white dark:bg-[#111827] p-10 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-800 max-w-md w-full">
-            <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center mx-auto mb-6">
-              <svg className="w-8 h-8 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-            </div>
-            <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-2">No Data Yet</h2>
-            <p className="text-gray-500 mb-6 text-sm">Start tracking habits to unlock powerful analytics.</p>
-            <button onClick={() => window.location.href = '/dashboard'} className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all shadow-lg active:scale-95">
-              Go to Dashboard
-            </button>
-          </div>
-        </main>
-      </>
-    );
-  }
-
-  const svgIcon = (d: string, w = 5) => <svg className={`w-${w} h-${w}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={d} /></svg>;
-
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#030712] text-gray-900 dark:text-gray-100 selection:bg-indigo-500/30 overflow-x-hidden">
+    <div className="min-h-screen bg-[#F9F9FB] dark:bg-[#0B0B0F] text-stone-900 dark:text-stone-100 selection:bg-violet-500/25">
       <TopNav />
 
-      <main id="analytics-content" className="pt-16 sm:pt-20 lg:pt-24 pb-24 lg:pb-12 px-3 sm:px-6 lg:px-8 max-w-[1600px] mx-auto space-y-6 sm:space-y-8 lg:space-y-12 transition-all duration-500 ease-out">
+      <main className="pt-16 sm:pt-20 lg:pt-22 pb-32 lg:pb-16 px-3.5 sm:px-6 lg:px-8 max-w-[1540px] mx-auto space-y-6">
 
-        {/* ═══ HEADER ═══ */}
-        <header className="flex flex-col gap-5 bg-white dark:bg-[#111827] p-5 sm:p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
-          <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-5">
+        {/* ━━━━━ HEADER & CONTROLS ━━━━━ */}
+        <header className="flex flex-col gap-4 bg-white/80 dark:bg-[#121218] p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-stone-200/80 dark:border-[#272732] backdrop-blur-xl shadow-xs">
+          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-black tracking-tight mb-1">
-                Performance <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-cyan-400">Intelligence</span>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-violet-500/10 text-[#7C3AED] dark:text-[#EAB308]">
+                  Performance Analytics
+                </span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-black font-heading tracking-tight">
+                Habit <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#7C3AED] to-[#EAB308]">Intelligence</span>
               </h1>
-              <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">Deep analytics on your habits, patterns, and consistency.</p>
+              <p className="text-stone-500 dark:text-[#9090A0] text-xs sm:text-sm font-medium">
+                Deep data analysis, habit correlations, and AI-driven growth patterns.
+              </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 w-full xl:w-auto">
-              {/* Habit filter */}
+            {/* Controls */}
+            <div className="flex flex-wrap items-center gap-2.5">
               <select
-                className="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 text-sm rounded-xl p-2.5 font-semibold outline-none w-full sm:w-44"
-                value={selectedHabitId} onChange={e => setSelectedHabitId(e.target.value)}
+                className="bg-stone-100 dark:bg-[#1A1A22] border border-stone-200 dark:border-[#272732] text-xs sm:text-sm rounded-xl px-3 py-2 font-bold outline-none cursor-pointer text-stone-800 dark:text-stone-200"
+                value={selectedHabitId}
+                onChange={(e) => setSelectedHabitId(e.target.value)}
               >
-                <option value="all">⚡ All Habits</option>
-                {habits.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
+                <option value="all">⚡ All Active Habits</option>
+                {habits.map((h) => (
+                  <option key={h.id} value={h.id}>{h.name}</option>
+                ))}
               </select>
 
-              {/* Time filter */}
-              <div className="flex bg-gray-50 dark:bg-gray-800/50 p-1 rounded-xl border border-gray-200 dark:border-gray-700 overflow-x-auto">
-                {[{ id: "7d", l: "7D" }, { id: "30d", l: "30D" }, { id: "90d", l: "90D" }, { id: "year", l: "1Y" }, { id: "custom", l: "Custom" }].map(t => (
-                  <button key={t.id} onClick={() => setTimeRange(t.id as TimeRange)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${timeRange === t.id ? "bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm" : "text-gray-500 hover:text-gray-900 dark:text-gray-400"
-                      }`}
-                  >{t.l}</button>
+              <div className="flex bg-stone-100 dark:bg-[#1A1A22] p-1 rounded-xl border border-stone-200 dark:border-[#272732] overflow-x-auto">
+                {[
+                  { id: "7d", l: "7D" },
+                  { id: "30d", l: "30D" },
+                  { id: "90d", l: "90D" },
+                  { id: "year", l: "1Y" },
+                ].map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => setTimeRange(t.id as TimeRange)}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                      timeRange === t.id
+                        ? "bg-white dark:bg-[#1E1E28] text-[#7C3AED] dark:text-[#EAB308] shadow-xs"
+                        : "text-stone-500 hover:text-stone-900 dark:text-[#9090A0]"
+                    }`}
+                  >
+                    {t.l}
+                  </button>
                 ))}
               </div>
 
-              {timeRange === "custom" && (
-                <div className="flex gap-2 items-center">
-                  <input type="date" className="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 text-sm rounded-xl p-2 outline-none" onChange={e => setCustomStart(e.target.value)} />
-                  <span className="text-gray-400 text-xs">to</span>
-                  <input type="date" className="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 text-sm rounded-xl p-2 outline-none" onChange={e => setCustomEnd(e.target.value)} />
-                </div>
-              )}
-
-              {/* Export buttons */}
-              <div className="flex gap-2">
-                <button onClick={exportCSV} className="px-3 py-2 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl text-xs font-bold hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-all border border-emerald-200 dark:border-emerald-500/20">
-                  CSV ↓
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={exportCSV}
+                  className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-bold bg-stone-100 dark:bg-[#1A1A22] hover:bg-stone-200 dark:hover:bg-[#272732] border border-stone-200 dark:border-[#272732] text-stone-700 dark:text-stone-300 transition-colors"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-[#EAB308]" />
+                  <span>CSV</span>
                 </button>
-                <button onClick={exportPDF} className="px-3 py-2 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-xl text-xs font-bold hover:bg-rose-100 dark:hover:bg-rose-500/20 transition-all border border-rose-200 dark:border-rose-500/20">
-                  PDF ↓
+                <button
+                  onClick={exportPDF}
+                  className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-bold bg-stone-100 dark:bg-[#1A1A22] hover:bg-stone-200 dark:hover:bg-[#272732] border border-stone-200 dark:border-[#272732] text-stone-700 dark:text-stone-300 transition-colors"
+                >
+                  <FileText className="w-3.5 h-3.5 text-[#7C3AED]" />
+                  <span>PDF</span>
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Tab Navigation */}
-          <div className="flex bg-gray-50 dark:bg-gray-800/50 p-1 rounded-xl border border-gray-100 dark:border-gray-700 w-full sm:w-auto self-start">
-            {(["overview", "habits", "patterns"] as const).map(tab => (
-              <button key={tab} onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 rounded-lg text-xs font-bold capitalize transition-all ${activeTab === tab ? "bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm" : "text-gray-500 hover:text-gray-900 dark:text-gray-400"
-                  }`}
-              >{tab}</button>
+          <div className="flex bg-stone-100 dark:bg-[#1A1A22] p-1 rounded-xl border border-stone-200/50 dark:border-[#272732]/50 self-start">
+            {[
+              { id: "overview", label: "Overview" },
+              { id: "habits", label: "Habit Breakdown" },
+              { id: "insights", label: "AI Insights" },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  activeTab === tab.id
+                    ? "bg-white dark:bg-[#1E1E28] text-[#7C3AED] dark:text-[#EAB308] shadow-xs"
+                    : "text-stone-500 hover:text-stone-900 dark:text-[#9090A0]"
+                }`}
+              >
+                {tab.label}
+              </button>
             ))}
           </div>
         </header>
 
-        {/* ═══ KEY METRICS ═══ */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
-          <StatCard small icon={svgIcon("M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z")}
-            title="Completion" value={`${stats.completionRate}%`} gradient="linear-gradient(135deg, #6366f1, #a855f7)" trend={stats.completionRate >= 50 ? "On Track" : "↓ Low"} />
-          <StatCard small icon={svgIcon("M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z")}
-            title="Fire Streak" value={stats.currentStreak} subtitle="days" gradient="linear-gradient(135deg, #f59e0b, #ef4444)" />
-          <StatCard small icon={svgIcon("M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z")}
-            title="Best Streak" value={stats.bestStreak} subtitle="days" gradient="linear-gradient(135deg, #10b981, #14b8a6)" />
-          <StatCard small icon={svgIcon("M13 10V3L4 14h7v7l9-11h-7z")}
-            title="Daily Avg" value={stats.avgDaily} subtitle="actions" gradient="linear-gradient(135deg, #ec4899, #f43f5e)" />
-          <StatCard small icon={svgIcon("M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z")}
-            title={selectedHabitId === "all" ? "Perfect Days" : "Completed"} value={selectedHabitId === "all" ? stats.perfectDays : stats.totalCompleted} gradient="linear-gradient(135deg, #0ea5e9, #06b6d4)" />
-          <StatCard small icon={svgIcon("M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z")}
-            title="Total Done" value={stats.totalCompleted} subtitle={`/${stats.totalPossible}`} gradient="linear-gradient(135deg, #d946ef, #a855f7)" />
+        {/* ━━━━━ KEY PERFORMANCE METRICS ━━━━━ */}
+        <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+          <div className="bg-white dark:bg-[#121218] rounded-2xl p-4 border border-stone-200/80 dark:border-[#272732] shadow-xs">
+            <span className="text-[11px] font-bold text-stone-400 uppercase tracking-wider block mb-1">Completion Rate</span>
+            <div className="text-2xl sm:text-3xl font-black font-heading text-[#7C3AED] dark:text-[#EAB308]">{stats.completionRate}%</div>
+          </div>
+          <div className="bg-white dark:bg-[#121218] rounded-2xl p-4 border border-stone-200/80 dark:border-[#272732] shadow-xs">
+            <span className="text-[11px] font-bold text-stone-400 uppercase tracking-wider block mb-1">Active Streak</span>
+            <div className="text-2xl sm:text-3xl font-black font-heading text-[#EAB308]">{stats.currentStreak}d</div>
+          </div>
+          <div className="bg-white dark:bg-[#121218] rounded-2xl p-4 border border-stone-200/80 dark:border-[#272732] shadow-xs">
+            <span className="text-[11px] font-bold text-stone-400 uppercase tracking-wider block mb-1">Best Historical</span>
+            <div className="text-2xl sm:text-3xl font-black font-heading text-[#A855F7]">{stats.bestStreak}d</div>
+          </div>
+          <div className="bg-white dark:bg-[#121218] rounded-2xl p-4 border border-stone-200/80 dark:border-[#272732] shadow-xs">
+            <span className="text-[11px] font-bold text-stone-400 uppercase tracking-wider block mb-1">Daily Average</span>
+            <div className="text-2xl sm:text-3xl font-black font-heading text-[#7C3AED]">{stats.avgDaily}</div>
+          </div>
+          <div className="bg-white dark:bg-[#121218] rounded-2xl p-4 border border-stone-200/80 dark:border-[#272732] shadow-xs">
+            <span className="text-[11px] font-bold text-stone-400 uppercase tracking-wider block mb-1">Total Checked</span>
+            <div className="text-2xl sm:text-3xl font-black font-heading text-[#EAB308]">{stats.totalCompleted}</div>
+          </div>
+          <div className="bg-white dark:bg-[#121218] rounded-2xl p-4 border border-stone-200/80 dark:border-[#272732] shadow-xs">
+            <span className="text-[11px] font-bold text-stone-400 uppercase tracking-wider block mb-1">Perfect Days</span>
+            <div className="text-2xl sm:text-3xl font-black font-heading text-[#FACC15]">{stats.perfectDays}d</div>
+          </div>
         </section>
 
-        {/* ═══ OVERVIEW TAB ═══ */}
+        {/* ━━━━━ TAB 1: OVERVIEW ━━━━━ */}
         {activeTab === "overview" && (
-          <>
-            {/* Row 1: Consistency Score + Momentum */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6">
-              <ChartCard title="Consistency Score" description="Weighted composite metric" icon={svgIcon("M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z")}>
-                <ConsistencyScore score={stats.consistencyScore} />
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
+              <ChartCard
+                title="Consistency Score"
+                description="Composite weighted reliability index"
+                icon={<ShieldCheck className="w-4 h-4" />}
+              >
+                <ConsistencyScoreGauge score={stats.consistencyScore} />
               </ChartCard>
 
-              <ChartCard colSpan={3} title="Momentum Overview" description="Daily completions over time" icon={svgIcon("M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z")}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={trendData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+              <ChartCard
+                colSpan={3}
+                title="Habit Momentum Trajectory"
+                description="Daily completed habit volume across time"
+                icon={<TrendingUp className="w-4 h-4" />}
+              >
+                <ResponsiveContainer width="100%" height={230}>
+                  <AreaChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <defs>
-                      <linearGradient id="colorComp" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.5} />
-                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                      <linearGradient id="amethystGoldArea" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#7C3AED" stopOpacity={0.45} />
+                        <stop offset="95%" stopColor="#EAB308" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" className="dark:stroke-gray-800/80" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 10, fontWeight: 600 }} minTickGap={30} />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" className="dark:stroke-[#272732]" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 10 }} minTickGap={25} />
                     <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 10 }} allowDecimals={false} />
                     <Tooltip content={<CustomTooltip />} />
-                    <Area type="monotone" dataKey="completed" name="Completed" stroke="#6366f1" strokeWidth={3} fill="url(#colorComp)" activeDot={{ r: 5, fill: '#6366f1', stroke: '#fff', strokeWidth: 2 }} />
+                    <Area
+                      type="monotone"
+                      dataKey="completed"
+                      name="Completed"
+                      stroke="#7C3AED"
+                      strokeWidth={2.5}
+                      fill="url(#amethystGoldArea)"
+                      activeDot={{ r: 4, fill: '#7C3AED', stroke: '#fff', strokeWidth: 2 }}
+                    />
                   </AreaChart>
                 </ResponsiveContainer>
               </ChartCard>
             </div>
 
-            {/* Row 2: Completion Rate Line + Weekly Rhythm + Heatmap */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
-              <ChartCard title="Completion Rate Trend" description="Daily % over time" icon={svgIcon("M13 7h8m0 0v8m0-8l-8 8-4-4-6 6")}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={trendData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" className="dark:stroke-gray-800/80" />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+              <ChartCard
+                title="Weekly Rhythm"
+                description="Performance distribution by weekday"
+                icon={<Calendar className="w-4 h-4" />}
+              >
+                <ResponsiveContainer width="100%" height={210}>
+                  <BarChart data={weeklyRhythmData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" className="dark:stroke-[#272732]" />
+                    <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 10 }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 10 }} allowDecimals={false} />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Bar dataKey="count" name="Completions" fill="#EAB308" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartCard>
+
+              <ChartCard
+                title="Completion Rate Curve"
+                description="Daily % execution rate"
+                icon={<Zap className="w-4 h-4" />}
+              >
+                <ResponsiveContainer width="100%" height={210}>
+                  <LineChart data={trendData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" className="dark:stroke-[#272732]" />
                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 10 }} minTickGap={30} />
                     <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 10 }} domain={[0, 100]} />
                     <Tooltip content={<CustomTooltip />} />
-                    <Line type="monotone" dataKey="rate" name="Rate %" stroke="#14b8a6" strokeWidth={2.5} dot={false} activeDot={{ r: 4, fill: '#14b8a6', stroke: '#fff', strokeWidth: 2 }} />
+                    <Line type="monotone" dataKey="rate" name="Rate %" stroke="#A855F7" strokeWidth={2.5} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
               </ChartCard>
 
-              <ChartCard title="Weekly Rhythm" description="Which days you perform best" icon={svgIcon("M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z")}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={weeklyRhythmData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" className="dark:stroke-gray-800/80" />
-                    <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 10, fontWeight: 600 }} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 10 }} allowDecimals={false} />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Bar dataKey="count" name="Completions" fill="#14b8a6" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </ChartCard>
-
-              <ChartCard title="Activity Heatmap" description="Color intensity = completion %" icon={svgIcon("M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6z")}>
+              <ChartCard
+                title="Activity Heatmap"
+                description="Color saturation indicates daily density"
+                icon={<Layers className="w-4 h-4" />}
+              >
                 <ActivityHeatmap logs={logs} habits={filteredHabits} rangeDays={rangeDays} />
               </ChartCard>
             </div>
+          </div>
+        )}
 
-            {/* Row 3: Weekly Trend + Distribution */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-              <ChartCard title="Weekly Output Trend" description="Total completions per week" icon={svgIcon("M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z")}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={completionTrendByWeek} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" className="dark:stroke-gray-800/80" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 10 }} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 10 }} />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Bar dataKey="total" name="Total" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </ChartCard>
+        {/* ━━━━━ TAB 2: HABIT BREAKDOWN ━━━━━ */}
+        {activeTab === "habits" && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+              {habitBreakdown.length > 0 && (
+                <ChartCard
+                  title="Habit Volume Distribution"
+                  description="Share of total completed actions"
+                  icon={<PieIcon className="w-4 h-4" />}
+                >
+                  <ResponsiveContainer width="100%" height={220}>
+                    <PieChart>
+                      <Pie
+                        data={habitBreakdown.filter((h) => h.completed > 0)}
+                        cx="50%" cy="50%" innerRadius={60} outerRadius={90}
+                        paddingAngle={3} dataKey="completed" stroke="none"
+                      >
+                        {habitBreakdown.map((e, i) => (
+                          <Cell key={i} fill={e.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip content={<CustomTooltip />} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </ChartCard>
+              )}
 
-              {selectedHabitId === "all" && habitBreakdown.length > 0 && (
-                <ChartCard title="Habit Distribution" description="Share of total completions" icon={svgIcon("M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z")}>
-                  <div className="relative h-full w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie data={habitBreakdown.filter(h => h.completed > 0)} cx="50%" cy="50%" innerRadius={70} outerRadius={100} paddingAngle={3} dataKey="completed" stroke="none">
-                          {habitBreakdown.map((e, i) => <Cell key={i} fill={e.color} className="hover:opacity-80 transition-opacity outline-none" />)}
-                        </Pie>
-                        <Tooltip content={<CustomTooltip />} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                      <span className="text-3xl font-black text-gray-900 dark:text-white">{stats.totalCompleted}</span>
-                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total</span>
-                    </div>
-                  </div>
+              {habitBreakdown.length > 2 && (
+                <ChartCard
+                  title="Routine Balance Radar"
+                  description="Symmetry across top habits"
+                  icon={<Award className="w-4 h-4" />}
+                >
+                  <ResponsiveContainer width="100%" height={220}>
+                    <RadarChart cx="50%" cy="50%" outerRadius="65%" data={habitBreakdown.slice(0, 6)}>
+                      <PolarGrid stroke="#e5e7eb" className="dark:stroke-[#272732]" />
+                      <PolarAngleAxis dataKey="name" tick={{ fill: '#6b7280', fontSize: 10, fontWeight: 700 }} />
+                      <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                      <Radar name="Rate %" dataKey="percent" stroke="#7C3AED" strokeWidth={2} fill="#7C3AED" fillOpacity={0.25} />
+                      <Tooltip content={<CustomTooltip />} />
+                    </RadarChart>
+                  </ResponsiveContainer>
                 </ChartCard>
               )}
             </div>
-          </>
-        )}
 
-        {/* ═══ HABITS TAB ═══ */}
-        {activeTab === "habits" && (
-          <>
-            {/* Performance Gap */}
-            {selectedHabitId === "all" && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-                <ChartCard title="Performance Ranking" description="Sorted by success rate" icon={svgIcon("M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12")}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart layout="vertical" data={habitBreakdown.slice(0, 8)} margin={{ top: 0, right: 30, left: -10, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" className="dark:stroke-gray-800/80" />
-                      <XAxis type="number" hide domain={[0, 100]} />
-                      <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 11, fontWeight: 600 }} width={80} />
-                      <Tooltip content={<CustomTooltip />} />
-                      <Bar dataKey="percent" name="Rate %" radius={[0, 4, 4, 0]} barSize={20}>
-                        {habitBreakdown.map((e, i) => <Cell key={i} fill={e.color} />)}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </ChartCard>
-
-                {habitBreakdown.length > 2 && (
-                  <ChartCard title="Consistency Radar" description="Balance across habits" icon={svgIcon("M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2z")}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RadarChart cx="50%" cy="50%" outerRadius="65%" data={habitBreakdown.slice(0, 6)}>
-                        <PolarGrid stroke="#e5e7eb" className="dark:stroke-gray-700" />
-                        <PolarAngleAxis dataKey="name" tick={{ fill: '#6b7280', fontSize: 10, fontWeight: 700 }} />
-                        <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
-                        <Radar name="Rate %" dataKey="percent" stroke="#ec4899" strokeWidth={2.5} fill="#ec4899" fillOpacity={0.3} />
-                        <Tooltip content={<CustomTooltip />} />
-                      </RadarChart>
-                    </ResponsiveContainer>
-                  </ChartCard>
-                )}
-              </div>
-            )}
-
-            {/* Leaderboard Table */}
-            <div className="bg-white dark:bg-[#111827] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
-              <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                <h2 className="text-base font-bold text-gray-900 dark:text-white">Habit Leaderboard</h2>
-                <span className="text-xs text-gray-400 font-medium">{habitBreakdown.length} habits</span>
+            <div className="bg-white dark:bg-[#121218] rounded-2xl border border-stone-200/80 dark:border-[#272732] overflow-hidden shadow-xs">
+              <div className="p-4 sm:p-5 border-b border-stone-100 dark:border-[#272732] flex items-center justify-between">
+                <h3 className="font-bold text-sm text-stone-900 dark:text-white">Habit Performance Leaderboard</h3>
+                <span className="text-xs text-stone-400 font-semibold">{habitBreakdown.length} total habits</span>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead>
-                    <tr className="bg-gray-50/50 dark:bg-gray-800/30 text-[10px] uppercase tracking-widest text-gray-500 font-bold border-b border-gray-100 dark:border-gray-800">
-                      <th className="px-5 py-3">#</th>
+                    <tr className="bg-stone-50 dark:bg-[#1A1A22] text-[10px] uppercase font-bold text-stone-400 border-b border-stone-100 dark:border-[#272732]">
+                      <th className="px-5 py-3">Rank</th>
                       <th className="px-5 py-3">Habit</th>
                       <th className="px-5 py-3">Rate</th>
-                      <th className="px-5 py-3">Done</th>
-                      <th className="px-5 py-3">Streak</th>
-                      <th className="px-5 py-3">Best</th>
+                      <th className="px-5 py-3">Completions</th>
+                      <th className="px-5 py-3">Current Streak</th>
+                      <th className="px-5 py-3">Best Streak</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
+                  <tbody className="divide-y divide-stone-100 dark:divide-[#272732] text-xs">
                     {habitBreakdown.map((h, i) => (
-                      <tr key={h.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                        <td className="px-5 py-3.5">
-                          <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-black ${i === 0 ? 'bg-amber-100 dark:bg-amber-500/10 text-amber-600' :
-                            i === 1 ? 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300' :
-                              i === 2 ? 'bg-orange-100 dark:bg-orange-500/10 text-orange-600' :
-                                'bg-gray-100 dark:bg-gray-800 text-gray-500'
-                            }`}>{i + 1}</span>
-                        </td>
-                        <td className="px-5 py-3.5">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: h.color }} />
-                            <span className="font-bold text-sm text-gray-900 dark:text-white">{h.fullName}</span>
+                      <tr key={h.id} className="hover:bg-stone-50 dark:hover:bg-[#1A1A22]/50 transition-colors">
+                        <td className="px-5 py-3.5 font-bold text-stone-400">{i + 1}</td>
+                        <td className="px-5 py-3.5 font-bold text-stone-900 dark:text-white">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: h.color }} />
+                            <span>{h.fullName}</span>
                           </div>
                         </td>
                         <td className="px-5 py-3.5">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-black text-gray-900 dark:text-white w-8">{h.percent}%</span>
-                            <div className="w-20 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                              <div className="h-full rounded-full transition-all duration-700" style={{ width: `${h.percent}%`, backgroundColor: h.color }} />
+                            <span className="font-bold">{h.percent}%</span>
+                            <div className="w-16 h-1.5 bg-stone-100 dark:bg-[#1A1A22] rounded-full overflow-hidden">
+                              <div className="h-full rounded-full" style={{ width: `${h.percent}%`, backgroundColor: h.color }} />
                             </div>
                           </div>
                         </td>
-                        <td className="px-5 py-3.5 text-xs font-semibold text-gray-500">
-                          <span className="text-gray-900 dark:text-white font-bold">{h.completed}</span>/{rangeDays.length}
+                        <td className="px-5 py-3.5 font-semibold text-stone-500 dark:text-[#9090A0]">
+                          {h.completed} / {rangeDays.length}
                         </td>
                         <td className="px-5 py-3.5">
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 text-xs font-bold">
-                            🔥 {h.streak}
+                          <span className="inline-flex items-center gap-1 font-bold text-[#EAB308]">
+                            <Flame className="w-3 h-3" />
+                            {h.streak}d
                           </span>
                         </td>
-                        <td className="px-5 py-3.5 text-xs font-bold text-gray-500 dark:text-gray-400">
-                          {h.bestStreak}d
-                        </td>
+                        <td className="px-5 py-3.5 font-bold text-stone-500 dark:text-[#9090A0]">{h.bestStreak}d</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
             </div>
-          </>
+          </div>
         )}
 
-        {/* ═══ PATTERNS TAB ═══ */}
-        {activeTab === "patterns" && (
-          <>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-              {/* Monthly Comparison */}
-              <ChartCard title="Monthly Comparison" description="Completion rate by month" icon={svgIcon("M7 12l3-3 3 3 4-4")}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={monthlyComparison} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" className="dark:stroke-gray-800/80" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 10 }} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 10 }} domain={[0, 100]} />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Bar dataKey="rate" name="Rate %" fill="#6366f1" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </ChartCard>
-
-              {/* Heatmap (larger) */}
-              <ChartCard title="Activity Intensity Map" description="Full period heatmap" icon={svgIcon("M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6z")}>
-                <ActivityHeatmap logs={logs} habits={filteredHabits} rangeDays={rangeDays} />
-              </ChartCard>
+        {/* ━━━━━ TAB 3: AI INSIGHTS ━━━━━ */}
+        {activeTab === "insights" && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {generatedInsights.map((item, idx) => (
+                <div
+                  key={idx}
+                  className={`p-5 rounded-2xl border shadow-xs space-y-2 ${
+                    item.type === "positive"
+                      ? "bg-[#7C3AED]/10 border-[#7C3AED]/25"
+                      : item.type === "warning"
+                      ? "bg-[#EAB308]/10 border-[#EAB308]/25"
+                      : "bg-white dark:bg-[#121218] border border-stone-200/80 dark:border-[#272732]"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Sparkles className={`w-4 h-4 ${
+                      item.type === "positive" ? "text-[#7C3AED]" : item.type === "warning" ? "text-[#EAB308]" : "text-stone-400"
+                    }`} />
+                    <h3 className="font-bold text-sm text-stone-900 dark:text-white">{item.title}</h3>
+                  </div>
+                  <p className="text-xs text-stone-600 dark:text-stone-300 leading-relaxed font-medium">
+                    {item.desc}
+                  </p>
+                </div>
+              ))}
             </div>
-
-            {/* Insights Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-5 text-white shadow-lg">
-                <p className="text-white/70 text-xs font-bold uppercase tracking-wider mb-2">💡 Insight</p>
-                <p className="text-sm font-bold leading-relaxed">
-                  {stats.completionRate >= 70
-                    ? "Excellent momentum! You're completing habits consistently."
-                    : stats.completionRate >= 40
-                      ? "Good progress, but there's room for improvement. Try to focus on consistency."
-                      : "Your completion rate needs work. Start with fewer habits and build up gradually."}
-                </p>
-              </div>
-              <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-5 text-white shadow-lg">
-                <p className="text-white/70 text-xs font-bold uppercase tracking-wider mb-2">📊 Best Day</p>
-                <p className="text-sm font-bold leading-relaxed">
-                  {(() => {
-                    const bestDay = weeklyRhythmData.reduce((max, d) => d.count > max.count ? d : max, weeklyRhythmData[0]);
-                    return `Your most productive day is ${bestDay.day} with ${bestDay.count} total completions!`;
-                  })()}
-                </p>
-              </div>
-              <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-5 text-white shadow-lg">
-                <p className="text-white/70 text-xs font-bold uppercase tracking-wider mb-2">🏆 Top Habit</p>
-                <p className="text-sm font-bold leading-relaxed">
-                  {habitBreakdown.length > 0
-                    ? `"${habitBreakdown[0].fullName}" is your most consistent habit at ${habitBreakdown[0].percent}%.`
-                    : "No habits tracked yet."}
-                </p>
-              </div>
-              <div className="bg-gradient-to-br from-rose-500 to-pink-600 rounded-2xl p-5 text-white shadow-lg">
-                <p className="text-white/70 text-xs font-bold uppercase tracking-wider mb-2">🎯 Focus Area</p>
-                <p className="text-sm font-bold leading-relaxed">
-                  {habitBreakdown.length > 1
-                    ? `Focus on "${habitBreakdown[habitBreakdown.length - 1].fullName}" — it needs the most attention at ${habitBreakdown[habitBreakdown.length - 1].percent}%.`
-                    : "Add more habits to get focus insights."}
-                </p>
-              </div>
-            </div>
-          </>
+          </div>
         )}
       </main>
     </div>

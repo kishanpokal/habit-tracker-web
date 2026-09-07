@@ -3,278 +3,381 @@
 import { useAuth } from "@/context/AuthContext";
 import { useEffect, useState } from "react";
 import TopNav from "@/components/TopNav";
-import { collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp, query, orderBy } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  onSnapshot,
+  serverTimestamp,
+  query,
+  orderBy,
+} from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useToast } from "@/components/Toast";
-import { Target, Plus, Trash2, CheckCircle, Circle, TrendingUp, Award, Calendar } from "lucide-react";
+import {
+  Target,
+  Plus,
+  Trash2,
+  CheckCircle2,
+  Circle,
+  TrendingUp,
+  Award,
+  Calendar,
+} from "lucide-react";
 
 type Goal = {
-    id: string;
-    title: string;
-    description: string;
-    targetDate: string;
-    category: string;
-    milestones: { text: string; done: boolean }[];
-    completed: boolean;
-    createdAt: any;
+  id: string;
+  title: string;
+  description: string;
+  targetDate: string;
+  category: string;
+  milestones: { text: string; done: boolean }[];
+  completed: boolean;
+  createdAt: any;
 };
 
 const GOAL_CATEGORIES = [
-    { key: "health", label: "🏋️ Health", color: "from-emerald-400 to-green-600" },
-    { key: "career", label: "💼 Career", color: "from-blue-400 to-indigo-600" },
-    { key: "learning", label: "📚 Learning", color: "from-purple-400 to-violet-600" },
-    { key: "fitness", label: "🏃 Fitness", color: "from-orange-400 to-red-600" },
-    { key: "finance", label: "💰 Finance", color: "from-amber-400 to-yellow-600" },
-    { key: "personal", label: "🌟 Personal", color: "from-pink-400 to-rose-600" },
+  { key: "health", label: "🏋️ Health", color: "from-[#7C3AED] to-[#6D28D9]" },
+  { key: "career", label: "💼 Career", color: "from-[#EAB308] to-[#CA8A04]" },
+  { key: "learning", label: "📚 Learning", color: "from-[#A855F7] to-[#7C3AED]" },
+  { key: "fitness", label: "🏃 Fitness", color: "from-[#FACC15] to-[#EAB308]" },
+  { key: "finance", label: "💰 Finance", color: "from-[#CA8A04] to-[#EAB308]" },
+  { key: "personal", label: "🌟 Personal", color: "from-[#6D28D9] to-[#7C3AED]" },
 ];
 
 export default function GoalsPage() {
-    const { user } = useAuth();
-    const { addToast } = useToast();
-    const [goals, setGoals] = useState<Goal[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [showAdd, setShowAdd] = useState(false);
-    const [newTitle, setNewTitle] = useState("");
-    const [newDesc, setNewDesc] = useState("");
-    const [newDate, setNewDate] = useState("");
-    const [newCategory, setNewCategory] = useState("personal");
-    const [newMilestones, setNewMilestones] = useState<string[]>([""]);
-    const [filter, setFilter] = useState("all");
+  const { user } = useAuth();
+  const { addToast } = useToast();
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAdd, setShowAdd] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+  const [newDesc, setNewDesc] = useState("");
+  const [newDate, setNewDate] = useState("");
+  const [newCategory, setNewCategory] = useState("personal");
+  const [newMilestones, setNewMilestones] = useState<string[]>([""]);
+  const [filter, setFilter] = useState("all");
 
-    useEffect(() => {
-        if (!user) return;
-        const q = query(collection(db, "users", user.uid, "goals"), orderBy("createdAt", "desc"));
-        const unsub = onSnapshot(q, snap => {
-            setGoals(snap.docs.map(d => ({ id: d.id, ...d.data() } as Goal)));
-            setLoading(false);
-        });
-        return unsub;
-    }, [user]);
+  useEffect(() => {
+    if (!user) return;
+    const q = query(collection(db, "users", user.uid, "goals"), orderBy("createdAt", "desc"));
+    const unsub = onSnapshot(q, (snap) => {
+      setGoals(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Goal)));
+      setLoading(false);
+    });
+    return unsub;
+  }, [user]);
 
-    const handleAdd = async () => {
-        if (!user || !newTitle.trim()) return;
-        try {
-            await addDoc(collection(db, "users", user.uid, "goals"), {
-                title: newTitle.trim(),
-                description: newDesc.trim(),
-                targetDate: newDate,
-                category: newCategory,
-                milestones: newMilestones.filter(m => m.trim()).map(m => ({ text: m.trim(), done: false })),
-                completed: false,
-                createdAt: serverTimestamp(),
-            });
-            setNewTitle(""); setNewDesc(""); setNewDate(""); setNewMilestones([""]); setShowAdd(false);
-            addToast("success", "Goal created!");
-        } catch { addToast("error", "Failed to create goal"); }
-    };
-
-    const toggleMilestone = async (goalId: string, idx: number) => {
-        if (!user) return;
-        const goal = goals.find(g => g.id === goalId);
-        if (!goal) return;
-        const updated = [...goal.milestones];
-        updated[idx] = { ...updated[idx], done: !updated[idx].done };
-        const allDone = updated.length > 0 && updated.every(m => m.done);
-        await updateDoc(doc(db, "users", user.uid, "goals", goalId), { milestones: updated, completed: allDone });
-        if (allDone) addToast("success", `🎉 Goal "${goal.title}" completed!`);
-    };
-
-    const deleteGoal = async (id: string) => {
-        if (!user) return;
-        await deleteDoc(doc(db, "users", user.uid, "goals", id));
-        addToast("info", "Goal deleted");
-    };
-
-    const filtered = filter === "all" ? goals
-        : filter === "active" ? goals.filter(g => !g.completed)
-            : filter === "done" ? goals.filter(g => g.completed)
-                : goals.filter(g => g.category === filter);
-
-    const activeCount = goals.filter(g => !g.completed).length;
-    const doneCount = goals.filter(g => g.completed).length;
-
-    if (!user || loading) {
-        return (
-            <div className="min-h-screen bg-white dark:bg-[#030712] flex items-center justify-center">
-                <div className="w-10 h-10 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
-            </div>
-        );
+  const handleAdd = async () => {
+    if (!user || !newTitle.trim()) return;
+    try {
+      await addDoc(collection(db, "users", user.uid, "goals"), {
+        title: newTitle.trim(),
+        description: newDesc.trim(),
+        targetDate: newDate,
+        category: newCategory,
+        milestones: newMilestones.filter((m) => m.trim()).map((m) => ({ text: m.trim(), done: false })),
+        completed: false,
+        createdAt: serverTimestamp(),
+      });
+      setNewTitle("");
+      setNewDesc("");
+      setNewDate("");
+      setNewMilestones([""]);
+      setShowAdd(false);
+      addToast("success", "Goal created successfully!");
+    } catch {
+      addToast("error", "Failed to create goal");
     }
+  };
 
+  const toggleMilestone = async (goalId: string, idx: number) => {
+    if (!user) return;
+    const goal = goals.find((g) => g.id === goalId);
+    if (!goal) return;
+    const updated = [...goal.milestones];
+    updated[idx] = { ...updated[idx], done: !updated[idx].done };
+    const allDone = updated.length > 0 && updated.every((m) => m.done);
+    await updateDoc(doc(db, "users", user.uid, "goals", goalId), { milestones: updated, completed: allDone });
+    if (allDone) addToast("success", `🎉 Goal "${goal.title}" completed!`);
+  };
+
+  const deleteGoal = async (id: string) => {
+    if (!user) return;
+    await deleteDoc(doc(db, "users", user.uid, "goals", id));
+    addToast("info", "Goal removed");
+  };
+
+  const filtered = filter === "all"
+    ? goals
+    : filter === "active"
+    ? goals.filter((g) => !g.completed)
+    : filter === "done"
+    ? goals.filter((g) => g.completed)
+    : goals.filter((g) => g.category === filter);
+
+  const activeCount = goals.filter((g) => !g.completed).length;
+  const doneCount = goals.filter((g) => g.completed).length;
+
+  if (!user || loading) {
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-[#030712] text-gray-900 dark:text-gray-100">
-            <TopNav />
-            <main className="pt-16 sm:pt-20 lg:pt-24 pb-24 lg:pb-12 px-3 sm:px-6 lg:px-8 max-w-4xl mx-auto space-y-5 safe-bottom">
-
-                {/* Header */}
-                <div className="bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500 rounded-2xl p-6 text-white relative overflow-hidden">
-                    <div className="absolute inset-0 opacity-10">
-                        <div className="absolute top-0 right-0 w-48 h-48 bg-white rounded-full blur-3xl animate-pulse" />
-                    </div>
-                    <div className="relative z-10 flex items-center justify-between flex-wrap gap-3">
-                        <div>
-                            <div className="flex items-center gap-2 mb-1">
-                                <Target className="w-6 h-6" />
-                                <h1 className="text-2xl font-black">Goals</h1>
-                            </div>
-                            <p className="text-white/70 text-sm">{activeCount} active · {doneCount} completed</p>
-                        </div>
-                        <button onClick={() => setShowAdd(!showAdd)}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-white/20 backdrop-blur border border-white/20 rounded-xl text-sm font-bold hover:bg-white/30 transition-all"
-                        >
-                            <Plus className="w-4 h-4" /> New Goal
-                        </button>
-                    </div>
-                </div>
-
-                {/* Add Goal Form */}
-                {showAdd && (
-                    <div className="bg-white dark:bg-[#111827] rounded-2xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm space-y-4" style={{ animation: "fadeIn 0.3s ease-out" }}>
-                        <input value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder="Goal title"
-                            className="w-full rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-sm font-bold outline-none focus:border-indigo-500 transition-all"
-                        />
-                        <textarea value={newDesc} onChange={e => setNewDesc(e.target.value)} placeholder="Why is this goal important?"
-                            className="w-full rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-2.5 text-sm outline-none focus:border-indigo-500 transition-all resize-none min-h-[60px]"
-                        />
-                        <div className="flex gap-3">
-                            <div className="flex-1">
-                                <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Target Date</label>
-                                <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)}
-                                    className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm outline-none"
-                                />
-                            </div>
-                            <div className="flex-1">
-                                <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Category</label>
-                                <select value={newCategory} onChange={e => setNewCategory(e.target.value)}
-                                    className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm outline-none"
-                                >
-                                    {GOAL_CATEGORIES.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
-                                </select>
-                            </div>
-                        </div>
-                        <div>
-                            <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Milestones</label>
-                            {newMilestones.map((m, i) => (
-                                <div key={i} className="flex gap-2 mb-2">
-                                    <input value={m} onChange={e => { const u = [...newMilestones]; u[i] = e.target.value; setNewMilestones(u); }}
-                                        placeholder={`Milestone ${i + 1}`}
-                                        className="flex-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm outline-none"
-                                    />
-                                </div>
-                            ))}
-                            <button onClick={() => setNewMilestones([...newMilestones, ""])} className="text-xs text-indigo-500 font-bold hover:text-indigo-400">
-                                + Add milestone
-                            </button>
-                        </div>
-                        <div className="flex gap-3">
-                            <button onClick={handleAdd} className="flex-1 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl text-sm font-bold hover:shadow-lg transition-all">
-                                Create Goal
-                            </button>
-                            <button onClick={() => setShowAdd(false)} className="px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm font-bold">
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {/* Filters */}
-                <div className="flex gap-2 overflow-x-auto pb-1">
-                    {[
-                        { key: "all", label: `All (${goals.length})` },
-                        { key: "active", label: `Active (${activeCount})` },
-                        { key: "done", label: `Done (${doneCount})` },
-                    ].map(f => (
-                        <button key={f.key} onClick={() => setFilter(f.key)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${filter === f.key ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900" : "bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-700"
-                                }`}
-                        >{f.label}</button>
-                    ))}
-                </div>
-
-                {/* Goals List */}
-                {filtered.length === 0 && (
-                    <div className="text-center py-16">
-                        <Target className="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-                        <p className="text-sm font-bold text-gray-400">No goals yet</p>
-                        <p className="text-xs text-gray-400">Create your first goal to get started</p>
-                    </div>
-                )}
-
-                <div className="space-y-3">
-                    {filtered.map(goal => {
-                        const cat = GOAL_CATEGORIES.find(c => c.key === goal.category);
-                        const totalM = goal.milestones?.length || 0;
-                        const doneM = goal.milestones?.filter(m => m.done).length || 0;
-                        const progress = totalM > 0 ? Math.round((doneM / totalM) * 100) : 0;
-                        const daysLeft = goal.targetDate ? Math.ceil((new Date(goal.targetDate).getTime() - Date.now()) / 86400000) : null;
-
-                        return (
-                            <div key={goal.id} className={`bg-white dark:bg-[#111827] rounded-2xl border shadow-sm overflow-hidden transition-all ${goal.completed ? "border-emerald-200 dark:border-emerald-800" : "border-gray-100 dark:border-gray-800"
-                                }`}>
-                                <div className="p-5">
-                                    <div className="flex items-start justify-between mb-3">
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                {goal.completed ? <Award className="w-4 h-4 text-emerald-500" /> : <TrendingUp className="w-4 h-4 text-indigo-500" />}
-                                                <h3 className={`text-sm font-bold ${goal.completed ? "line-through text-gray-400" : ""}`}>{goal.title}</h3>
-                                            </div>
-                                            {goal.description && <p className="text-xs text-gray-500 mt-0.5">{goal.description}</p>}
-                                            <div className="flex items-center gap-2 mt-2">
-                                                {cat && <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800">{cat.label}</span>}
-                                                {daysLeft !== null && (
-                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1 ${daysLeft < 0 ? "bg-red-100 dark:bg-red-500/10 text-red-500" :
-                                                            daysLeft <= 7 ? "bg-amber-100 dark:bg-amber-500/10 text-amber-500" :
-                                                                "bg-gray-100 dark:bg-gray-800 text-gray-500"
-                                                        }`}>
-                                                        <Calendar className="w-3 h-3" />
-                                                        {daysLeft < 0 ? `${Math.abs(daysLeft)}d overdue` : `${daysLeft}d left`}
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-                                        <button onClick={() => deleteGoal(goal.id)} className="text-gray-300 hover:text-red-400 transition-colors p-1">
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    </div>
-
-                                    {/* Progress bar */}
-                                    {totalM > 0 && (
-                                        <div className="mb-3">
-                                            <div className="flex justify-between text-[10px] font-bold text-gray-400 mb-1">
-                                                <span>{doneM}/{totalM} milestones</span>
-                                                <span>{progress}%</span>
-                                            </div>
-                                            <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                                                <div className={`h-full rounded-full transition-all duration-500 ${goal.completed ? "bg-emerald-500" : "bg-indigo-500"}`}
-                                                    style={{ width: `${progress}%` }}
-                                                />
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Milestones */}
-                                    {goal.milestones?.length > 0 && (
-                                        <div className="space-y-1.5">
-                                            {goal.milestones.map((m, i) => (
-                                                <button key={i} onClick={() => toggleMilestone(goal.id, i)}
-                                                    className="w-full flex items-center gap-3 text-left p-2.5 sm:p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
-                                                >
-                                                    {m.done ? <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> : <Circle className="w-4 h-4 text-gray-300 group-hover:text-indigo-400 flex-shrink-0 transition-colors" />}
-                                                    <span className={`text-xs font-medium ${m.done ? "line-through text-gray-400" : ""}`}>{m.text}</span>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            </main>
-
-            <style jsx>{`
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-      `}</style>
-        </div>
+      <div className="min-h-screen bg-[#F9F9FB] dark:bg-[#0B0B0F] flex items-center justify-center">
+        <div className="w-9 h-9 border-3 border-violet-500/20 border-t-[#7C3AED] rounded-full animate-spin" />
+      </div>
     );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#F9F9FB] dark:bg-[#0B0B0F] text-stone-900 dark:text-white selection:bg-violet-500/20">
+      <TopNav />
+      <main className="pt-16 sm:pt-20 lg:pt-22 pb-32 lg:pb-16 px-3.5 sm:px-6 lg:px-8 max-w-4xl mx-auto space-y-6">
+
+        {/* Header */}
+        <div className="bg-gradient-to-r from-[#7C3AED] via-[#6D28D9] to-[#EAB308] rounded-2xl sm:rounded-3xl p-6 sm:p-7 text-white relative overflow-hidden shadow-lg shadow-violet-500/25">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="relative z-10 flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <div className="flex items-center gap-2.5 mb-1.5">
+                <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center">
+                  <Target className="w-5 h-5 text-white" />
+                </div>
+                <h1 className="text-2xl sm:text-3xl font-black font-heading tracking-tight">Milestone Goals</h1>
+              </div>
+              <p className="text-white/90 text-xs sm:text-sm font-medium">
+                {activeCount} active targets · {doneCount} completed objectives
+              </p>
+            </div>
+            <button
+              onClick={() => setShowAdd(!showAdd)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-xl text-xs sm:text-sm font-bold transition-all shadow-xs"
+            >
+              <Plus className="w-4 h-4" />
+              <span>New Goal</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Add Goal Form */}
+        {showAdd && (
+          <div className="bg-white dark:bg-[#121218] rounded-2xl border border-stone-200/80 dark:border-[#272732] p-5 shadow-xs space-y-4">
+            <h3 className="text-sm font-bold font-heading text-stone-900 dark:text-white">Define Target Objective</h3>
+            <input
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              placeholder="What do you want to accomplish?"
+              className="w-full rounded-xl border border-stone-200 dark:border-[#272732] bg-stone-50 dark:bg-[#1A1A22] px-4 py-2.5 text-xs sm:text-sm font-bold outline-none focus:border-[#7C3AED] text-stone-800 dark:text-stone-200"
+            />
+            <textarea
+              value={newDesc}
+              onChange={(e) => setNewDesc(e.target.value)}
+              placeholder="Why is this important to your growth?"
+              className="w-full rounded-xl border border-stone-200 dark:border-[#272732] bg-stone-50 dark:bg-[#1A1A22] px-4 py-2.5 text-xs sm:text-sm outline-none focus:border-[#7C3AED] resize-none min-h-[60px] text-stone-800 dark:text-stone-200"
+            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-[10px] font-bold text-stone-400 dark:text-[#9090A0] uppercase tracking-wider mb-1 block">Target Deadline</label>
+                <input
+                  type="date"
+                  value={newDate}
+                  onChange={(e) => setNewDate(e.target.value)}
+                  className="w-full rounded-xl border border-stone-200 dark:border-[#272732] bg-stone-50 dark:bg-[#1A1A22] px-3 py-2 text-xs outline-none text-stone-800 dark:text-stone-200"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-stone-400 dark:text-[#9090A0] uppercase tracking-wider mb-1 block">Category</label>
+                <select
+                  value={newCategory}
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  className="w-full rounded-xl border border-stone-200 dark:border-[#272732] bg-stone-50 dark:bg-[#1A1A22] px-3 py-2 text-xs outline-none font-bold text-stone-800 dark:text-stone-200"
+                >
+                  {GOAL_CATEGORIES.map((c) => (
+                    <option key={c.key} value={c.key}>{c.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold text-stone-400 dark:text-[#9090A0] uppercase tracking-wider mb-1.5 block">Sub-Milestones</label>
+              {newMilestones.map((m, i) => (
+                <div key={i} className="flex gap-2 mb-2">
+                  <input
+                    value={m}
+                    onChange={(e) => {
+                      const u = [...newMilestones];
+                      u[i] = e.target.value;
+                      setNewMilestones(u);
+                    }}
+                    placeholder={`Milestone ${i + 1}`}
+                    className="flex-1 rounded-xl border border-stone-200 dark:border-[#272732] bg-stone-50 dark:bg-[#1A1A22] px-3 py-2 text-xs outline-none text-stone-800 dark:text-stone-200"
+                  />
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => setNewMilestones([...newMilestones, ""])}
+                className="text-xs text-[#7C3AED] dark:text-[#EAB308] font-bold hover:underline"
+              >
+                + Add another milestone
+              </button>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                onClick={handleAdd}
+                className="flex-1 py-2.5 bg-gradient-to-r from-[#7C3AED] to-[#6D28D9] hover:opacity-95 text-white rounded-xl text-xs font-bold shadow-xs transition-all active:scale-[0.99]"
+              >
+                Create Target
+              </button>
+              <button
+                onClick={() => setShowAdd(false)}
+                className="px-4 py-2.5 border border-stone-200 dark:border-[#272732] rounded-xl text-xs font-bold hover:bg-stone-100 dark:hover:bg-[#1A1A22]"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Filter Pills */}
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {[
+            { key: "all", label: `All (${goals.length})` },
+            { key: "active", label: `Active (${activeCount})` },
+            { key: "done", label: `Completed (${doneCount})` },
+          ].map((f) => (
+            <button
+              key={f.key}
+              onClick={() => setFilter(f.key)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                filter === f.key
+                  ? "bg-gradient-to-r from-[#7C3AED] to-[#6D28D9] text-white shadow-xs"
+                  : "bg-white dark:bg-[#121218] border border-stone-200/80 dark:border-[#272732] text-stone-600 dark:text-[#9090A0]"
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Goals List */}
+        {filtered.length === 0 && (
+          <div className="text-center py-14 bg-white dark:bg-[#121218] rounded-3xl border border-stone-200/80 dark:border-[#272732] p-8 shadow-xs">
+            <Target className="w-10 h-10 mx-auto text-stone-300 dark:text-stone-600 mb-3" />
+            <h3 className="text-base font-bold text-stone-800 dark:text-stone-200 mb-1">No goals found</h3>
+            <p className="text-xs text-stone-400 dark:text-[#9090A0] max-w-xs mx-auto">
+              Set your target milestones to keep your long-term ambitions organized.
+            </p>
+          </div>
+        )}
+
+        <div className="space-y-3.5">
+          {filtered.map((goal) => {
+            const cat = GOAL_CATEGORIES.find((c) => c.key === goal.category);
+            const totalM = goal.milestones?.length || 0;
+            const doneM = goal.milestones?.filter((m) => m.done).length || 0;
+            const progress = totalM > 0 ? Math.round((doneM / totalM) * 100) : 0;
+            const daysLeft = goal.targetDate
+              ? Math.ceil((new Date(goal.targetDate + "T00:00:00").getTime() - Date.now()) / 86400000)
+              : null;
+
+            return (
+              <div
+                key={goal.id}
+                className={`bg-white dark:bg-[#121218] rounded-2xl border shadow-xs transition-all p-5 ${
+                  goal.completed
+                    ? "border-[#EAB308]/40 bg-[#EAB308]/5"
+                    : "border-stone-200/80 dark:border-[#272732]"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      {goal.completed ? (
+                        <Award className="w-4 h-4 text-[#EAB308] flex-shrink-0" />
+                      ) : (
+                        <TrendingUp className="w-4 h-4 text-[#7C3AED] flex-shrink-0" />
+                      )}
+                      <h3 className={`text-sm sm:text-base font-bold ${goal.completed ? "line-through text-stone-400" : "text-stone-900 dark:text-white"}`}>
+                        {goal.title}
+                      </h3>
+                    </div>
+                    {goal.description && <p className="text-xs text-stone-500 dark:text-[#9090A0] mt-0.5">{goal.description}</p>}
+                    <div className="flex items-center gap-2 mt-2.5">
+                      {cat && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-stone-100 dark:bg-[#1A1A22] text-stone-600 dark:text-stone-300">
+                          {cat.label}
+                        </span>
+                      )}
+                      {daysLeft !== null && (
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1 ${
+                          daysLeft < 0
+                            ? "bg-violet-500/15 text-[#7C3AED] dark:text-[#C084FC]"
+                            : daysLeft <= 7
+                            ? "bg-[#EAB308]/15 text-[#EAB308]"
+                            : "bg-stone-100 dark:bg-[#1A1A22] text-stone-500"
+                        }`}>
+                          <Calendar className="w-3 h-3" />
+                          {daysLeft < 0 ? `${Math.abs(daysLeft)}d overdue` : `${daysLeft}d left`}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => deleteGoal(goal.id)}
+                    className="text-stone-400 hover:text-[#7C3AED] transition-colors p-1"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Progress bar */}
+                {totalM > 0 && (
+                  <div className="mb-3">
+                    <div className="flex justify-between text-[10px] font-bold text-stone-400 mb-1">
+                      <span>{doneM}/{totalM} milestones reached</span>
+                      <span className="text-[#7C3AED] dark:text-[#EAB308] font-black">{progress}%</span>
+                    </div>
+                    <div className="h-2 bg-stone-100 dark:bg-[#1A1A22] rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          goal.completed ? "bg-[#EAB308]" : "bg-gradient-to-r from-[#7C3AED] to-[#EAB308]"
+                        }`}
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Milestones Checklist */}
+                {goal.milestones?.length > 0 && (
+                  <div className="space-y-1.5 pt-1">
+                    {goal.milestones.map((m, i) => (
+                      <button
+                        key={i}
+                        onClick={() => toggleMilestone(goal.id, i)}
+                        className="w-full flex items-center gap-2.5 text-left p-2 rounded-xl hover:bg-stone-50 dark:hover:bg-[#1A1A22]/60 transition-colors group"
+                      >
+                        {m.done ? (
+                          <CheckCircle2 className="w-4 h-4 text-[#EAB308] flex-shrink-0" />
+                        ) : (
+                          <Circle className="w-4 h-4 text-stone-300 dark:text-stone-600 group-hover:text-[#7C3AED] flex-shrink-0 transition-colors" />
+                        )}
+                        <span className={`text-xs font-medium ${m.done ? "line-through text-stone-400" : "text-stone-700 dark:text-stone-300"}`}>
+                          {m.text}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </main>
+    </div>
+  );
 }

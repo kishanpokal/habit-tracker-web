@@ -4,8 +4,8 @@
     "description": "Build better habits. Track streaks. Achieve your goals.",
     "start_url": "/",
     "display": "standalone",
-    "background_color": "#030712",
-    "theme_color": "#6366f1",
+    "background_color": "#0B0B0F",
+    "theme_color": "#7C3AED",
     "orientation": "any",
     "icons": [
         {

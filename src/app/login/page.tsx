@@ -11,6 +11,7 @@ import {
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { Flame, Lock, Mail, Eye, EyeOff, CheckCircle2, ArrowRight, ShieldCheck, AlertCircle, Check } from "lucide-react";
+import HabitFlowLogo from "@/components/HabitFlowLogo";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -91,15 +92,9 @@ export default function LoginPage() {
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#EAB308]/12 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 max-w-md text-center">
-          <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-[#7C3AED] to-[#EAB308] p-[2px] mx-auto mb-6 shadow-2xl shadow-violet-500/25">
-            <div className="w-full h-full bg-[#0B0B0F] rounded-[22px] flex items-center justify-center">
-              <Flame className="w-10 h-10 text-[#7C3AED] fill-[#EAB308]" />
-            </div>
-          </div>
-
-          <h2 className="text-3xl font-black font-heading tracking-tight mb-3">
-            Habit<span className="text-transparent bg-clip-text bg-gradient-to-r from-[#7C3AED] to-[#EAB308]">Flow</span>
-          </h2>
+          <Link href="/" className="inline-block mb-6 hover:scale-105 transition-transform">
+            <HabitFlowLogo size="hero" animated={true} />
+          </Link>
           <p className="text-[#9090A0] text-sm leading-relaxed mb-8 font-medium">
             The precision habit architecture designed for long-term consistency, streak momentum, and compound personal growth.
           </p>
@@ -140,16 +135,9 @@ export default function LoginPage() {
 
         <div className="w-full max-w-sm">
           {/* Mobile Header Logo */}
-          <div className="flex items-center gap-2 mb-8 lg:hidden">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#7C3AED] to-[#EAB308] p-[1.5px]">
-              <div className="w-full h-full bg-[#0B0B0F] rounded-[10px] flex items-center justify-center">
-                <Flame className="w-5 h-5 text-[#7C3AED] fill-[#EAB308]" />
-              </div>
-            </div>
-            <span className="font-heading font-black text-lg tracking-tight">
-              Habit<span className="text-[#EAB308]">Flow</span>
-            </span>
-          </div>
+          <Link href="/" className="inline-block mb-8 lg:hidden">
+            <HabitFlowLogo size="sm" animated={true} />
+          </Link>
 
           <div className="mb-6">
             <h1 className="text-2xl font-black font-heading tracking-tight">

@@ -24,6 +24,7 @@ import {
   Flame,
   ListChecks,
 } from "lucide-react";
+import HabitFlowLogo from "@/components/HabitFlowLogo";
 
 export default function TopNav() {
   const pathname = usePathname();
@@ -88,15 +89,8 @@ export default function TopNav() {
         <div className="max-w-[1520px] mx-auto px-3 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14 sm:h-16 lg:h-18">
             {/* Brand Emblem */}
-            <Link href="/dashboard" className="flex items-center gap-2.5 group flex-shrink-0">
-              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-[#7C3AED] to-[#EAB308] p-[1.5px] shadow-sm shadow-violet-500/20 group-hover:scale-105 transition-transform">
-                <div className="w-full h-full bg-white dark:bg-[#121218] rounded-[10px] flex items-center justify-center">
-                  <Flame className="w-4 h-4 sm:w-5 sm:h-5 text-[#7C3AED] fill-[#EAB308]" />
-                </div>
-              </div>
-              <span className="text-base sm:text-lg font-black tracking-tight font-heading">
-                Habit<span className="text-transparent bg-clip-text bg-gradient-to-r from-[#7C3AED] to-[#EAB308]">Flow</span>
-              </span>
+            <Link href="/dashboard" className="flex items-center group flex-shrink-0">
+              <HabitFlowLogo size="sm" animated={true} />
             </Link>
 
             {/* Desktop Navigation Links */}

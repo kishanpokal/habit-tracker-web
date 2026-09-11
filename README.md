@@ -231,16 +231,8 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
 
-      match /habits/{habitId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
-      }
-      match /habitLogs/{logId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
-      }
-      match /journal/{entryId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
-      }
-      match /goals/{goalId} {
+      // Allows full read/write for all subcollections (habits, habitLogs, goals, journal, manifest_*)
+      match /{allPaths=**} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
     }
@@ -248,7 +240,7 @@ service cloud.firestore {
 }
 ```
 
-> **Security Model:** Each user can only read/write their own data. All subcollections are protected under the `users/{userId}` path, ensuring complete data isolation between users.
+> **Security Model:** Each user can only read/write their own data. All subcollections (including habits, logs, goals, journal, and manifestation records) are protected under the `users/{userId}` path, ensuring complete data isolation between users.
 
 ---
 

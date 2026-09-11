@@ -23,6 +23,7 @@ import {
   X,
   Flame,
   ListChecks,
+  Sparkles,
 } from "lucide-react";
 import HabitFlowLogo from "@/components/HabitFlowLogo";
 
@@ -62,6 +63,7 @@ export default function TopNav() {
     { name: "Badges", short: "Badges", href: "/badges", icon: Award },
     { name: "Focus Timer", short: "Focus", href: "/focus", icon: Timer },
     { name: "Goals", short: "Goals", href: "/goals", icon: Target },
+    { name: "Manifest", short: "Manifest", href: "/manifest", icon: Sparkles },
     { name: "Profile", short: "Profile", href: "/profile", icon: User },
     { name: "Settings", short: "Settings", href: "/settings", icon: Settings },
   ];

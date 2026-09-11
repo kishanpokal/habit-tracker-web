@@ -24,29 +24,22 @@ import {
   Plus,
   Trash2,
   CheckCircle2,
-  Circle,
-  Eye,
   Heart,
-  Calendar,
   Flame,
   Volume2,
   VolumeX,
   Maximize2,
   X,
-  Compass,
   ArrowRight,
-  Bookmark,
   Sun,
   Moon,
   CloudSun,
   Check,
-  RotateCcw,
   Zap,
   Target,
   PenTool,
   ShieldAlert,
   Copy,
-  ExternalLink,
 } from "lucide-react";
 
 /* ─── Types & Definitions ─── */
@@ -149,6 +142,28 @@ const getTodayString = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
 
+// Bulletproof safe date checker that will NEVER throw RangeError: Invalid time value
+const isTodaySafe = (timestamp: any, targetDayStr: string): boolean => {
+  if (!timestamp) return false;
+  try {
+    let date: Date | null = null;
+    if (typeof timestamp?.toDate === "function") {
+      date = timestamp.toDate();
+    } else if (typeof timestamp === "object" && typeof timestamp?.seconds === "number") {
+      date = new Date(timestamp.seconds * 1000);
+    } else if (typeof timestamp === "string" || typeof timestamp === "number") {
+      date = new Date(timestamp);
+    }
+    if (!date || isNaN(date.getTime())) return false;
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}` === targetDayStr;
+  } catch {
+    return false;
+  }
+};
+
 export default function ManifestPage() {
   const { user } = useAuth();
   const { addToast } = useToast();
@@ -220,7 +235,7 @@ export default function ManifestPage() {
     try {
       localStorage.setItem(`manifest_${user.uid}_${key}`, JSON.stringify(data));
     } catch {
-      // Ignore quota errors
+      // Ignore storage errors
     }
   }, [user]);
 
@@ -238,7 +253,7 @@ export default function ManifestPage() {
   useEffect(() => {
     if (!user) return;
 
-    // First, load from localStorage to ensure instant rendering without blank screen
+    // Load from local storage first so user sees immediate results
     const localAff = loadLocal<Affirmation[]>("affirmations", []);
     const localScripts = loadLocal<ScriptEntry[]>("scripts", []);
     const localVision = loadLocal<VisionCard[]>("vision", []);
@@ -337,7 +352,6 @@ export default function ManifestPage() {
       handleSnapshotError
     );
 
-    // Safety timeout to ensure loading screen resolves
     const timer = setTimeout(() => setLoading(false), 800);
 
     return () => {
@@ -350,17 +364,14 @@ export default function ManifestPage() {
     };
   }, [user, loadLocal, saveLocal]);
 
-  /* ─── Metric Calculations ─── */
+  /* ─── Metric Calculations (Completely safe against Invalid Date) ─── */
   const stats = useMemo(() => {
     let completedTechniques = 0;
     const practicedAffirmationToday = affirmations.some((a) => a.lastPracticedDate === todayStr);
     if (practicedAffirmationToday) completedTechniques += 1;
 
-    const scriptedToday = scripts.some((s) => {
-      if (!s.createdAt) return false;
-      const d = s.createdAt.toDate ? s.createdAt.toDate() : new Date(s.createdAt);
-      return d.toISOString().split("T")[0] === todayStr;
-    });
+    // Uses safe date validation
+    const scriptedToday = scripts.some((s) => isTodaySafe(s.createdAt, todayStr));
     if (scriptedToday) completedTechniques += 1;
 
     const gratitudeToday = gratitudeEntries.some((g) => g.type === "gratitude" && g.date === todayStr);
@@ -393,7 +404,6 @@ export default function ManifestPage() {
       createdAt: new Date().toISOString(),
     };
 
-    // Immediate optimistic local update
     const updated = [newItem, ...affirmations];
     setAffirmations(updated);
     saveLocal("affirmations", updated);
@@ -412,7 +422,7 @@ export default function ManifestPage() {
         createdAt: serverTimestamp(),
       });
     } catch {
-      // Already saved locally
+      // Saved locally
     }
   };
 
@@ -442,7 +452,7 @@ export default function ManifestPage() {
         });
       }
     } catch {
-      // Saved in localStorage
+      // Saved locally
     }
   };
 
@@ -498,7 +508,7 @@ export default function ManifestPage() {
         createdAt: serverTimestamp(),
       });
     } catch {
-      // Saved in localStorage
+      // Saved locally
     }
   };
 
@@ -930,7 +940,6 @@ service cloud.firestore {
                   </button>
                 </div>
 
-                {/* Pre-built Prompt Picker */}
                 <div>
                   <span className="text-[10px] font-bold text-stone-400 dark:text-[#9090A0] uppercase tracking-wider mb-1.5 block">
                     Or select from curated neuro-linguistic bank:
@@ -1091,7 +1100,6 @@ service cloud.firestore {
         {/* ━━━━━ TAB 2: FUTURE SCRIPTING ━━━━━ */}
         {activeTab === "scripting" && (
           <div className="space-y-5">
-            {/* Header & CTA */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-[#121218] p-4 rounded-2xl border border-stone-200/80 dark:border-[#272732]">
               <div>
                 <h2 className="text-sm font-bold font-heading text-stone-900 dark:text-white">Living In The End (Narrative Priming)</h2>
@@ -1119,7 +1127,6 @@ service cloud.firestore {
                   </button>
                 </div>
 
-                {/* Prompt Carousel */}
                 <div className="bg-stone-50 dark:bg-[#1A1A22] p-3 rounded-xl border border-stone-200/80 dark:border-[#272732]">
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-[10px] font-bold text-[#7C3AED] uppercase tracking-wider">Suggested Exploration Prompt</span>
@@ -1471,7 +1478,6 @@ service cloud.firestore {
         {/* ━━━━━ TAB 4: GRATITUDE & RAS EVIDENCE LEDGER ━━━━━ */}
         {activeTab === "gratitude" && (
           <div className="space-y-6">
-            {/* Top Explanation Card */}
             <div className="bg-white dark:bg-[#121218] p-5 rounded-2xl border border-stone-200/80 dark:border-[#272732] space-y-1">
               <div className="flex items-center gap-2">
                 <Heart className="w-4 h-4 text-[#EAB308]" />

@@ -19,6 +19,8 @@ import { db } from "@/lib/firebase";
 import { useToast } from "@/components/Toast";
 import { soundFX } from "@/lib/soundEffects";
 import { motion, AnimatePresence } from "framer-motion";
+import BeginnerManifestWizard from "@/components/manifest/BeginnerManifestWizard";
+import ManifestationGuideModal from "@/components/manifest/ManifestationGuideModal";
 import {
   Sparkles,
   Plus,
@@ -40,6 +42,9 @@ import {
   PenTool,
   ShieldAlert,
   Copy,
+  BookOpen,
+  HelpCircle,
+  Compass,
 } from "lucide-react";
 
 /* ─── Types & Definitions ─── */
@@ -66,7 +71,7 @@ type ScriptEntry = {
 type VisionCard = {
   id: string;
   title: string;
-  category: "wealth" | "vitality" | "mastery" | "lifestyle" | "relationships";
+  category: "wealth" | "vitality" | "mastery" | "lifestyle" | "relationships" | "confidence" | "peace";
   description: string;
   imageUrl: string;
   linkedHabitText?: string;
@@ -173,6 +178,8 @@ export default function ManifestPage() {
   const [isMuted, setIsMuted] = useState(soundFX.getMuted());
   const [permissionError, setPermissionError] = useState(false);
   const [showRuleModal, setShowRuleModal] = useState(false);
+  const [showGuideModal, setShowGuideModal] = useState(false);
+  const [showWizardModal, setShowWizardModal] = useState(false);
 
   // Affirmations
   const [affirmations, setAffirmations] = useState<Affirmation[]>([]);
@@ -469,6 +476,92 @@ export default function ManifestPage() {
       }
     } catch {
       // Handled locally
+    }
+  };
+
+  /* ─── Beginner Wizard Complete Handler ─── */
+  const handleWizardComplete = async (data: {
+    affirmationText: string;
+    category: "confidence" | "wealth" | "vitality" | "peace" | "mastery";
+    visionTitle: string;
+    visionDescription: string;
+    visionImageUrl: string;
+    visionHabit: string;
+  }) => {
+    if (!user) return;
+
+    // 1. Add Affirmation
+    const newAff: Affirmation = {
+      id: "aff_" + Date.now(),
+      text: data.affirmationText,
+      category: data.category,
+      lastPracticedDate: todayStr,
+      practiceCount: 1,
+      streak: 1,
+      createdAt: new Date().toISOString(),
+    };
+    const updatedAff = [newAff, ...affirmations];
+    setAffirmations(updatedAff);
+    saveLocal("affirmations", updatedAff);
+
+    // 2. Add Vision Card
+    const newVis: VisionCard = {
+      id: "vision_" + (Date.now() + 1),
+      title: data.visionTitle,
+      category: data.category,
+      description: data.visionDescription,
+      imageUrl: data.visionImageUrl,
+      linkedHabitText: data.visionHabit,
+      createdAt: new Date().toISOString(),
+    };
+    const updatedVis = [newVis, ...visionCards];
+    setVisionCards(updatedVis);
+    saveLocal("vision", updatedVis);
+
+    // 3. Add Gratitude/Evidence Entry
+    const newGrat: GratitudeEntry = {
+      id: "grat_" + (Date.now() + 2),
+      date: todayStr,
+      type: "gratitude",
+      items: [
+        `Started my manifestation journey: "${data.visionTitle}"`,
+        `Anchored my daily micro-habit: "${data.visionHabit}"`,
+        "Took 30 seconds to visualize and believe in my dream",
+      ],
+      createdAt: new Date().toISOString(),
+    };
+    const updatedGrat = [newGrat, ...gratitudeEntries];
+    setGratitudeEntries(updatedGrat);
+    saveLocal("gratitude", updatedGrat);
+
+    soundFX.playHyperspaceWarp();
+    addToast("success", "✨ Welcome to your manifestation journey! Everything is anchored.");
+
+    try {
+      await addDoc(collection(db, "users", user.uid, "manifest_affirmations"), {
+        text: newAff.text,
+        category: newAff.category,
+        lastPracticedDate: todayStr,
+        practiceCount: 1,
+        streak: 1,
+        createdAt: serverTimestamp(),
+      });
+      await addDoc(collection(db, "users", user.uid, "manifest_vision"), {
+        title: newVis.title,
+        category: newVis.category,
+        description: newVis.description,
+        imageUrl: newVis.imageUrl,
+        linkedHabitText: newVis.linkedHabitText,
+        createdAt: serverTimestamp(),
+      });
+      await addDoc(collection(db, "users", user.uid, "manifest_gratitude"), {
+        date: todayStr,
+        type: "gratitude",
+        items: newGrat.items,
+        createdAt: serverTimestamp(),
+      });
+    } catch {
+      // Saved locally
     }
   };
 
@@ -821,18 +914,42 @@ service cloud.firestore {
           <div className="absolute -bottom-10 -left-10 w-60 h-60 bg-[#EAB308]/20 rounded-full blur-2xl pointer-events-none" />
 
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-2 max-w-xl">
+            <div className="space-y-3 max-w-xl">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-white text-[11px] font-bold uppercase tracking-wider">
                 <Sparkles className="w-3.5 h-3.5 text-[#EAB308]" />
-                <span>Neuro-Priming & Mindset Architecture</span>
+                <span>The 3-Step Manifestation System</span>
               </div>
               <h1 className="text-2xl sm:text-4xl font-black font-heading tracking-tight leading-tight">
                 Manifestation Sanctuary
               </h1>
               <p className="text-white/90 text-xs sm:text-sm font-medium leading-relaxed">
-                Rewire your Reticular Activating System (RAS) through daily affirmations, future memory scripting, 
-                visual sensory anchoring, and the Tesla 3-6-9 frequency ritual.
+                Manifestation is simple: pick what you want, feel good about it for 30 seconds a day, and take 1 small step forward. No weird magic or complex rituals—just clear focus and daily habits.
               </p>
+
+              {/* Beginner-Friendly Quick Action Buttons */}
+              <div className="flex flex-wrap items-center gap-2.5 pt-1">
+                <button
+                  onClick={() => {
+                    soundFX.playClick();
+                    setShowWizardModal(true);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-stone-900 font-black text-xs hover:bg-stone-100 shadow-lg shadow-black/10 transition-all active:scale-95 cursor-pointer"
+                >
+                  <Zap className="w-4 h-4 text-[#7C3AED]" />
+                  <span>Start in 60s (Beginner Wizard)</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    soundFX.playClick();
+                    setShowGuideModal(true);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-md text-white font-bold text-xs border border-white/25 transition-all active:scale-95 cursor-pointer"
+                >
+                  <BookOpen className="w-4 h-4 text-[#FACC15]" />
+                  <span>Why It&apos;s Easy (101 Guide)</span>
+                </button>
+              </div>
             </div>
 
             {/* Quick Ritual Progress Badge & Audio Toggle */}
@@ -903,6 +1020,28 @@ service cloud.firestore {
         {/* ━━━━━ TAB 1: AFFIRMATIONS ━━━━━ */}
         {activeTab === "affirmations" && (
           <div className="space-y-5">
+            {/* Friendly 1-Sentence Explainer */}
+            <div className="bg-gradient-to-r from-violet-500/10 via-purple-500/5 to-amber-500/10 border border-violet-500/20 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-start sm:items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-[#7C3AED]/20 text-[#7C3AED] flex items-center justify-center flex-shrink-0 font-bold text-sm">
+                  🗣️
+                </div>
+                <div>
+                  <h3 className="text-xs sm:text-sm font-bold text-stone-900 dark:text-white">
+                    Affirmations Made Simple
+                  </h3>
+                  <p className="text-xs text-stone-600 dark:text-stone-300">
+                    Your mind believes what you repeat. Say your affirmation once a day out loud to replace self-doubt with quiet confidence.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowGuideModal(true)}
+                className="text-xs font-bold text-[#7C3AED] dark:text-[#FACC15] hover:underline whitespace-nowrap self-end sm:self-center cursor-pointer"
+              >
+                Why this works ➔
+              </button>
+            </div>
             {/* Header & Filter Controls */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-[#121218] p-4 rounded-2xl border border-stone-200/80 dark:border-[#272732]">
               <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
@@ -1100,17 +1239,40 @@ service cloud.firestore {
         {/* ━━━━━ TAB 2: FUTURE SCRIPTING ━━━━━ */}
         {activeTab === "scripting" && (
           <div className="space-y-5">
+            {/* Friendly 1-Sentence Explainer */}
+            <div className="bg-gradient-to-r from-amber-500/10 via-purple-500/5 to-violet-500/10 border border-amber-500/20 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-start sm:items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-[#EAB308]/20 text-[#EAB308] flex items-center justify-center flex-shrink-0 font-bold text-sm">
+                  ✍️
+                </div>
+                <div>
+                  <h3 className="text-xs sm:text-sm font-bold text-stone-900 dark:text-white">
+                    Future Scripting: Diary From Tomorrow
+                  </h3>
+                  <p className="text-xs text-stone-600 dark:text-stone-300">
+                    Write a short journal entry as if your dream already came true today. It's a fun mental dress rehearsal that makes success feel normal.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowGuideModal(true)}
+                className="text-xs font-bold text-[#7C3AED] dark:text-[#FACC15] hover:underline whitespace-nowrap self-end sm:self-center cursor-pointer"
+              >
+                Why this works ➔
+              </button>
+            </div>
+
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-[#121218] p-4 rounded-2xl border border-stone-200/80 dark:border-[#272732]">
               <div>
-                <h2 className="text-sm font-bold font-heading text-stone-900 dark:text-white">Living In The End (Narrative Priming)</h2>
+                <h2 className="text-sm font-bold font-heading text-stone-900 dark:text-white">Future Journal Entries</h2>
                 <p className="text-xs text-stone-500 dark:text-[#9090A0]">
-                  Write as if your outcome has already been achieved. Flood your writing with sensory details and gratitude.
+                  Write as if your outcome has already been achieved. Describe how good it feels and what your day looks like.
                 </p>
               </div>
 
               <button
                 onClick={() => setShowAddScript(!showAddScript)}
-                className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-[#7C3AED] to-[#6D28D9] text-white rounded-xl text-xs font-bold shadow-xs hover:opacity-95 transition-all"
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-[#7C3AED] to-[#6D28D9] text-white rounded-xl text-xs font-bold shadow-xs hover:opacity-95 transition-all cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>New Script</span>
@@ -1121,19 +1283,19 @@ service cloud.firestore {
             {showAddScript && (
               <div className="bg-white dark:bg-[#121218] rounded-2xl border border-stone-200/80 dark:border-[#272732] p-5 shadow-xs space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold font-heading text-stone-900 dark:text-white">Compose Future Memory</h3>
-                  <button onClick={() => setShowAddScript(false)} className="text-stone-400 hover:text-stone-600 dark:hover:text-stone-200">
+                  <h3 className="text-sm font-bold font-heading text-stone-900 dark:text-white">Write Your Future Story</h3>
+                  <button onClick={() => setShowAddScript(false)} className="text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 cursor-pointer">
                     <X className="w-4 h-4" />
                   </button>
                 </div>
 
                 <div className="bg-stone-50 dark:bg-[#1A1A22] p-3 rounded-xl border border-stone-200/80 dark:border-[#272732]">
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[10px] font-bold text-[#7C3AED] uppercase tracking-wider">Suggested Exploration Prompt</span>
+                    <span className="text-[10px] font-bold text-[#7C3AED] uppercase tracking-wider">Need an idea? Try this prompt:</span>
                     <button
                       type="button"
                       onClick={() => setSelectedScriptPrompt((prev) => (prev + 1) % SCRIPTING_PROMPTS.length)}
-                      className="text-[10px] font-bold text-[#EAB308] hover:underline"
+                      className="text-[10px] font-bold text-[#EAB308] hover:underline cursor-pointer"
                     >
                       Cycle Prompt ↻
                     </button>
@@ -1147,19 +1309,19 @@ service cloud.firestore {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="text-[10px] font-bold text-stone-400 dark:text-[#9090A0] uppercase tracking-wider mb-1 block">
-                        Title / Theme of this Reality
+                        Title / What Happened?
                       </label>
                       <input
                         value={newScriptTitle}
                         onChange={(e) => setNewScriptTitle(e.target.value)}
-                        placeholder="e.g., The Launch of My Global Platform"
+                        placeholder="e.g., The Day I Finally Reached My Fitness Goal"
                         className="w-full rounded-xl border border-stone-200 dark:border-[#272732] bg-stone-50 dark:bg-[#1A1A22] px-3.5 py-2 text-xs sm:text-sm font-bold outline-none focus:border-[#7C3AED] text-stone-800 dark:text-stone-200"
                       />
                     </div>
 
                     <div>
                       <label className="text-[10px] font-bold text-stone-400 dark:text-[#9090A0] uppercase tracking-wider mb-1 block">
-                        Target Date Anchor
+                        Future Date Anchor
                       </label>
                       <input
                         value={newScriptDateAnchor}
@@ -1172,25 +1334,25 @@ service cloud.firestore {
 
                   <div>
                     <label className="text-[10px] font-bold text-stone-400 dark:text-[#9090A0] uppercase tracking-wider mb-1 block">
-                      Dominant Emotional / Somatic State
+                      How do you feel? (Emotional State)
                     </label>
                     <input
                       value={newScriptSensory}
                       onChange={(e) => setNewScriptSensory(e.target.value)}
-                      placeholder="e.g., Serene Calm, Boundless Joy, Peaceful Mastery"
+                      placeholder="e.g., Deeply Peaceful, Victorious, Grounded, and Grateful"
                       className="w-full rounded-xl border border-stone-200 dark:border-[#272732] bg-stone-50 dark:bg-[#1A1A22] px-3.5 py-2 text-xs sm:text-sm outline-none focus:border-[#7C3AED] text-stone-800 dark:text-stone-200"
                     />
                   </div>
 
                   <div>
                     <label className="text-[10px] font-bold text-stone-400 dark:text-[#9090A0] uppercase tracking-wider mb-1 block">
-                      Script Content (Present / Past Tense — Describe what you see, hear, and feel)
+                      Your Story (Write in present tense: &ldquo;I am sitting here... It is finally done...&rdquo;)
                     </label>
                     <textarea
                       value={newScriptContent}
                       onChange={(e) => setNewScriptContent(e.target.value)}
                       rows={6}
-                      placeholder="I am sitting at my desk watching the morning sunlight filter through the window. It is done. The discipline we built over the last 12 months paid compounding dividends..."
+                      placeholder="I am sitting at my desk watching the morning sunlight filter through the window. It is done. The discipline we built over the last few months paid compounding dividends. I feel so light and relieved..."
                       className="w-full rounded-xl border border-stone-200 dark:border-[#272732] bg-stone-50 dark:bg-[#1A1A22] p-3 text-xs sm:text-sm font-medium outline-none focus:border-[#7C3AED] text-stone-800 dark:text-stone-200"
                     />
                   </div>
@@ -1269,17 +1431,40 @@ service cloud.firestore {
         {/* ━━━━━ TAB 3: VISION SANCTUARY ━━━━━ */}
         {activeTab === "vision" && (
           <div className="space-y-5">
+            {/* Friendly 1-Sentence Explainer */}
+            <div className="bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-violet-500/10 border border-emerald-500/20 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-start sm:items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0 font-bold text-sm">
+                  🖼️
+                </div>
+                <div>
+                  <h3 className="text-xs sm:text-sm font-bold text-stone-900 dark:text-white">
+                    Vision Board: Visual Beacons
+                  </h3>
+                  <p className="text-xs text-stone-600 dark:text-stone-300">
+                    Your brain thinks in pictures. Glancing at images of your dreams every day keeps motivation high and reminds you why your daily habits matter.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowGuideModal(true)}
+                className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline whitespace-nowrap self-end sm:self-center cursor-pointer"
+              >
+                Why this works ➔
+              </button>
+            </div>
+
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-[#121218] p-4 rounded-2xl border border-stone-200/80 dark:border-[#272732]">
               <div>
-                <h2 className="text-sm font-bold font-heading text-stone-900 dark:text-white">Sensory Vision Gallery</h2>
+                <h2 className="text-sm font-bold font-heading text-stone-900 dark:text-white">Visual Dream Board</h2>
                 <p className="text-xs text-stone-500 dark:text-[#9090A0]">
-                  Visual affective priming. Train your Reticular Activating System (RAS) through repeated visual engagement.
+                  Pictures of where you want to be. Each card connects your dream directly to a daily micro-habit.
                 </p>
               </div>
 
               <button
                 onClick={() => setShowAddVision(!showAddVision)}
-                className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-[#7C3AED] to-[#6D28D9] text-white rounded-xl text-xs font-bold shadow-xs hover:opacity-95 transition-all"
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-[#7C3AED] to-[#6D28D9] text-white rounded-xl text-xs font-bold shadow-xs hover:opacity-95 transition-all cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>Add Vision Card</span>
@@ -1478,13 +1663,36 @@ service cloud.firestore {
         {/* ━━━━━ TAB 4: GRATITUDE & RAS EVIDENCE LEDGER ━━━━━ */}
         {activeTab === "gratitude" && (
           <div className="space-y-6">
+            {/* Friendly 1-Sentence Explainer */}
+            <div className="bg-gradient-to-r from-pink-500/10 via-rose-500/5 to-amber-500/10 border border-pink-500/20 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-start sm:items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-pink-500/20 text-pink-600 dark:text-pink-400 flex items-center justify-center flex-shrink-0 font-bold text-sm">
+                  🙏
+                </div>
+                <div>
+                  <h3 className="text-xs sm:text-sm font-bold text-stone-900 dark:text-white">
+                    Gratitude & Proof: Notice The Good
+                  </h3>
+                  <p className="text-xs text-stone-600 dark:text-stone-300">
+                    When you look for blessings, you find more of them. Logging even tiny wins or coincidences teaches your brain to expect good luck.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowGuideModal(true)}
+                className="text-xs font-bold text-pink-600 dark:text-pink-400 hover:underline whitespace-nowrap self-end sm:self-center cursor-pointer"
+              >
+                Why this works ➔
+              </button>
+            </div>
+
             <div className="bg-white dark:bg-[#121218] p-5 rounded-2xl border border-stone-200/80 dark:border-[#272732] space-y-1">
               <div className="flex items-center gap-2">
                 <Heart className="w-4 h-4 text-[#EAB308]" />
-                <h2 className="text-sm font-bold font-heading text-stone-900 dark:text-white">Gratitude & Evidence Logging</h2>
+                <h2 className="text-sm font-bold font-heading text-stone-900 dark:text-white">Gratitude & Daily Wins Ledger</h2>
               </div>
               <p className="text-xs text-stone-500 dark:text-[#9090A0]">
-                Gratitude conditions dopamine and calm receptivity. The Synchronicity Ledger activates confirmation bias in your favor, proving your reality is aligning.
+                Gratitude conditions your mind to be joyful and open. Logging little proofs reinforces confidence that life is working in your favor.
               </p>
             </div>
 
@@ -1656,13 +1864,36 @@ service cloud.firestore {
         {/* ━━━━━ TAB 5: 3-6-9 RITUAL ━━━━━ */}
         {activeTab === "369" && (
           <div className="space-y-6">
+            {/* Friendly 1-Sentence Explainer */}
+            <div className="bg-gradient-to-r from-amber-500/10 via-violet-500/5 to-purple-500/10 border border-amber-500/20 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-start sm:items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-[#EAB308]/20 text-[#EAB308] flex items-center justify-center flex-shrink-0 font-bold text-sm">
+                  ⚡
+                </div>
+                <div>
+                  <h3 className="text-xs sm:text-sm font-bold text-stone-900 dark:text-white">
+                    The 3-6-9 Repetition Game: Keep It Simple
+                  </h3>
+                  <p className="text-xs text-stone-600 dark:text-stone-300">
+                    No secret magic here! It's simply writing or repeating your goal 3 times in the morning, 6 in the afternoon, and 9 at night so you never lose focus.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowGuideModal(true)}
+                className="text-xs font-bold text-[#7C3AED] dark:text-[#FACC15] hover:underline whitespace-nowrap self-end sm:self-center cursor-pointer"
+              >
+                Why this works ➔
+              </button>
+            </div>
+
             {/* Intention Hero Card */}
             <div className="bg-white dark:bg-[#121218] rounded-2xl border border-stone-200/80 dark:border-[#272732] p-6 shadow-xs space-y-4">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-2">
                   <Zap className="w-4 h-4 text-[#EAB308]" />
                   <h2 className="text-sm font-bold font-heading text-stone-900 dark:text-white">
-                    Nikola Tesla 3-6-9 Frequency Method
+                    The 3-6-9 Daily Repetition Game
                   </h2>
                 </div>
 
@@ -1675,9 +1906,9 @@ service cloud.firestore {
                       setTemp369Intention(threeSixNine.intention);
                       setEditing369Intention(!editing369Intention);
                     }}
-                    className="text-xs font-bold text-[#7C3AED] dark:text-[#EAB308] hover:underline"
+                    className="text-xs font-bold text-[#7C3AED] dark:text-[#EAB308] hover:underline cursor-pointer"
                   >
-                    {editing369Intention ? "Close" : "Edit Aim"}
+                    {editing369Intention ? "Close" : "Edit Goal"}
                   </button>
                 </div>
               </div>
@@ -1692,15 +1923,15 @@ service cloud.firestore {
                   />
                   <button
                     onClick={handleSave369Intention}
-                    className="px-4 py-2 bg-gradient-to-r from-[#7C3AED] to-[#6D28D9] text-white rounded-xl text-xs font-bold"
+                    className="px-4 py-2 bg-gradient-to-r from-[#7C3AED] to-[#6D28D9] text-white rounded-xl text-xs font-bold cursor-pointer"
                   >
-                    Save Chief Intention
+                    Save Goal
                   </button>
                 </div>
               ) : (
                 <div className="p-4 rounded-xl bg-gradient-to-r from-violet-500/10 via-amber-500/10 to-violet-500/5 border border-violet-500/20 text-center">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[#7C3AED] dark:text-[#EAB308] block mb-1">
-                    Your Definitive Chief Aim
+                    Your Current Goal / Dream
                   </span>
                   <p className="text-base sm:text-lg font-bold text-stone-900 dark:text-white leading-relaxed">
                     &ldquo;{threeSixNine.intention}&rdquo;
@@ -1736,14 +1967,14 @@ service cloud.firestore {
                     <div className="flex items-center gap-2">
                       <Sun className="w-4 h-4 text-[#EAB308]" />
                       <span className="text-xs font-bold uppercase tracking-wider text-stone-800 dark:text-stone-200">
-                        1. Morning
+                        1. Morning Focus
                       </span>
                     </div>
                     <span className="text-xs font-black text-[#EAB308]">{today369.morning || 0} / 3</span>
                   </div>
 
                   <p className="text-[11px] text-stone-400 dark:text-[#9090A0]">
-                    Capture the hypnopompic waking state. Write or recite your intention 3 times.
+                    Start your day with clarity. Say or write your goal 3 times right after waking up.
                   </p>
 
                   <div className="flex items-center justify-center gap-2 py-3">
@@ -1764,7 +1995,7 @@ service cloud.firestore {
 
                 <button
                   onClick={() => handleUpdate369Log("morning", 3)}
-                  className={`w-full py-2 rounded-xl text-xs font-bold transition-all ${
+                  className={`w-full py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                     today369.morning >= 3
                       ? "bg-amber-500/15 text-[#EAB308] border border-[#EAB308]/30"
                       : "bg-stone-900 dark:bg-white text-white dark:text-stone-900"
@@ -1785,14 +2016,14 @@ service cloud.firestore {
                     <div className="flex items-center gap-2">
                       <CloudSun className="w-4 h-4 text-[#7C3AED]" />
                       <span className="text-xs font-bold uppercase tracking-wider text-stone-800 dark:text-stone-200">
-                        2. Afternoon
+                        2. Midday Reset
                       </span>
                     </div>
                     <span className="text-xs font-black text-[#7C3AED]">{today369.afternoon || 0} / 6</span>
                   </div>
 
                   <p className="text-[11px] text-stone-400 dark:text-[#9090A0]">
-                    Midday cognitive refocus. Resynchronize your mind with your outcome 6 times.
+                    Midday mental check-in. Take 1 minute to refocus on your outcome 6 times.
                   </p>
 
                   <div className="grid grid-cols-6 gap-1.5 py-3">
@@ -1813,7 +2044,7 @@ service cloud.firestore {
 
                 <button
                   onClick={() => handleUpdate369Log("afternoon", 6)}
-                  className={`w-full py-2 rounded-xl text-xs font-bold transition-all ${
+                  className={`w-full py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                     today369.afternoon >= 6
                       ? "bg-violet-500/15 text-[#7C3AED] border border-violet-500/30"
                       : "bg-stone-900 dark:bg-white text-white dark:text-stone-900"
@@ -1834,14 +2065,14 @@ service cloud.firestore {
                     <div className="flex items-center gap-2">
                       <Moon className="w-4 h-4 text-[#CA8A04]" />
                       <span className="text-xs font-bold uppercase tracking-wider text-stone-800 dark:text-stone-200">
-                        3. Evening
+                        3. Evening Calm
                       </span>
                     </div>
                     <span className="text-xs font-black text-[#EAB308]">{today369.evening || 0} / 9</span>
                   </div>
 
                   <p className="text-[11px] text-stone-400 dark:text-[#9090A0]">
-                    Subconscious hypnagogic seeding before sleep. Solidify your reality 9 times.
+                    Peaceful bedtime reflection. Solidify your dream 9 times so you sleep with peace of mind.
                   </p>
 
                   <div className="grid grid-cols-5 gap-1.5 py-3">
@@ -1862,7 +2093,7 @@ service cloud.firestore {
 
                 <button
                   onClick={() => handleUpdate369Log("evening", 9)}
-                  className={`w-full py-2 rounded-xl text-xs font-bold transition-all ${
+                  className={`w-full py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                     today369.evening >= 9
                       ? "bg-amber-500/15 text-[#EAB308] border border-[#EAB308]/30"
                       : "bg-stone-900 dark:bg-white text-white dark:text-stone-900"
@@ -2004,6 +2235,20 @@ service cloud.firestore {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ━━━━━ BEGINNER 60-SECOND QUICKSTART WIZARD ━━━━━ */}
+      <BeginnerManifestWizard
+        isOpen={showWizardModal}
+        onClose={() => setShowWizardModal(false)}
+        onComplete={handleWizardComplete}
+      />
+
+      {/* ━━━━━ MANIFESTATION 101 GUIDE MODAL (NO JARGON / MYTH BUSTER) ━━━━━ */}
+      <ManifestationGuideModal
+        isOpen={showGuideModal}
+        onClose={() => setShowGuideModal(false)}
+        onOpenWizard={() => setShowWizardModal(true)}
+      />
     </div>
   );
 }

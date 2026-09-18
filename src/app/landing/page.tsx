@@ -88,7 +88,7 @@ export default function LandingPage() {
   const { user } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [isMuted, setIsMuted] = useState(soundFX.getMuted());
-  const [countdown, setCountdown] = useState(3);
+  const [countdown, setCountdown] = useState(5);
   const [redirectCancelled, setRedirectCancelled] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -98,7 +98,7 @@ export default function LandingPage() {
   const bentoRef = useRef<HTMLElement>(null);
   const ctaRef = useRef<HTMLElement>(null);
 
-  // 3-Second Auto-Redirect: if user does not click, redirect to dashboard or login
+  // 5-Second Auto-Redirect: if user does not click, redirect to dashboard or login
   useEffect(() => {
     if (redirectCancelled) return;
 
@@ -118,7 +118,7 @@ export default function LandingPage() {
     // Trigger router.push as an independent timer side-effect (NEVER inside setState)
     const redirectTimer = setTimeout(() => {
       router.push(user ? "/dashboard" : "/login");
-    }, 3000);
+    }, 5000);
 
     return () => {
       clearTimeout(redirectTimer);
@@ -156,25 +156,23 @@ export default function LandingPage() {
         });
       }
 
-      // 1. Hero stagger reveal
+      // 1. Hero stagger reveal (clean 2D, zero scroll lag)
       if (heroRef.current) {
         const heroTl = gsap.timeline({
-          defaults: { duration: 0.8, ease: "power3.out" },
+          defaults: { duration: 0.7, ease: "power2.out" },
         });
 
         heroTl
           .from("[data-hero-badge]", {
-            y: -30,
+            y: -20,
             opacity: 0,
             duration: 0.5,
           })
           .from(
-            "[data-hero-heading] .hero-word",
+            "[data-hero-heading]",
             {
-              y: 60,
+              y: 30,
               opacity: 0,
-              rotateX: 15,
-              stagger: 0.08,
               duration: 0.7,
             },
             "-=0.2"
@@ -182,18 +180,18 @@ export default function LandingPage() {
           .from(
             "[data-hero-sub]",
             {
-              y: 30,
+              y: 20,
               opacity: 0,
-              duration: 0.6,
+              duration: 0.5,
             },
             "-=0.3"
           )
           .from(
             "[data-hero-cta]",
             {
-              y: 25,
+              y: 15,
               opacity: 0,
-              duration: 0.5,
+              duration: 0.4,
             },
             "-=0.2"
           );
@@ -235,15 +233,14 @@ export default function LandingPage() {
       if (bentoRef.current) {
         const cards = bentoRef.current.querySelectorAll("[data-bento-card]");
         gsap.from(cards, {
-          y: 60,
+          y: 40,
           opacity: 0,
-          rotateX: 8,
-          stagger: 0.1,
-          duration: 0.65,
+          stagger: 0.08,
+          duration: 0.6,
           ease: "power2.out",
           scrollTrigger: {
             trigger: bentoRef.current,
-            start: "top 75%",
+            start: "top 78%",
             once: true,
           },
         });
@@ -314,22 +311,7 @@ export default function LandingPage() {
     { scope: containerRef }
   );
 
-  // Split hero heading into words for stagger animation
-  const heroWords = (text: string, isGradient = false) =>
-    text.split(" ").map((word, i) => (
-      <span
-        key={i}
-        className={`hero-word inline-block ${
-          isGradient
-            ? "text-transparent bg-clip-text bg-gradient-to-r from-[#A855F7] via-[#C084FC] to-[#EAB308]"
-            : "text-white"
-        }`}
-        style={{ transformStyle: "preserve-3d" }}
-      >
-        {word}
-        {i < text.split(" ").length - 1 && "\u00A0"}
-      </span>
-    ));
+
 
   return (
     <div
@@ -424,17 +406,16 @@ export default function LandingPage() {
             <span>Track habits, build momentum, stay consistent</span>
           </div>
 
-          {/* Heading — words split for stagger */}
+          {/* Heading — clean, lag-free typography */}
           <h1
             data-hero-heading
             className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black font-heading tracking-tight leading-[1.05]"
-            style={{ perspective: "1000px" }}
           >
-            <span className="block">
-              {heroWords("Build the chain.")}
+            <span className="block text-white">
+              Build the chain.
             </span>
-            <span className="block">
-              {heroWords("Every day compounds.", true)}
+            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-[#A855F7] via-[#C084FC] to-[#EAB308]">
+              Every day compounds.
             </span>
           </h1>
 
@@ -537,9 +518,9 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5" style={{ perspective: "1200px" }}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
             {BENTO_FEATURES.map((feat, i) => (
-              <div key={i} data-bento-card style={{ transformStyle: "preserve-3d" }}>
+              <div key={i} data-bento-card>
                 <BentoTiltCard {...feat} />
               </div>
             ))}

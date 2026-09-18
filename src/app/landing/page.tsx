@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -83,9 +84,12 @@ const BENTO_FEATURES = [
 ];
 
 export default function LandingPage() {
+  const router = useRouter();
   const { user } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [isMuted, setIsMuted] = useState(soundFX.getMuted());
+  const [countdown, setCountdown] = useState(3);
+  const [redirectCancelled, setRedirectCancelled] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const progressBarRef = useRef<HTMLDivElement>(null);
@@ -93,6 +97,35 @@ export default function LandingPage() {
   const labRef = useRef<HTMLElement>(null);
   const bentoRef = useRef<HTMLElement>(null);
   const ctaRef = useRef<HTMLElement>(null);
+
+  // 3-Second Auto-Redirect: if user does not click, redirect to dashboard or login
+  useEffect(() => {
+    if (redirectCancelled) return;
+
+    // Cancel auto-redirect if user scrolls down to explore
+    const handleScrollCancel = () => {
+      if (window.scrollY > 40) {
+        setRedirectCancelled(true);
+      }
+    };
+    window.addEventListener("scroll", handleScrollCancel, { passive: true });
+
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          router.push(user ? "/dashboard" : "/login");
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener("scroll", handleScrollCancel);
+    };
+  }, [user, router, redirectCancelled]);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 25);
@@ -417,22 +450,47 @@ export default function LandingPage() {
           {/* CTAs */}
           <div
             data-hero-cta
-            className="flex flex-col sm:flex-row items-center justify-center gap-3.5 pt-2 max-w-md mx-auto"
+            className="flex flex-col items-center justify-center gap-3 pt-2 max-w-md mx-auto"
           >
-            <Link
-              href={user ? "/dashboard" : "/register"}
-              className="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-gradient-to-r from-[#7C3AED] via-[#8B5CF6] to-[#6D28D9] text-white text-sm font-black shadow-xl shadow-violet-500/25 hover:scale-105 hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2 group"
-            >
-              <span>{user ? "Open Dashboard" : "Start Free"}</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 w-full">
+              <Link
+                href={user ? "/dashboard" : "/login"}
+                onClick={() => setRedirectCancelled(true)}
+                className="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-gradient-to-r from-[#7C3AED] via-[#8B5CF6] to-[#6D28D9] text-white text-sm font-black shadow-xl shadow-violet-500/25 hover:scale-105 hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2 group relative"
+              >
+                {!redirectCancelled && countdown > 0 ? (
+                  <>
+                    <span>{user ? `Entering Dashboard (${countdown}s)` : `Opening App (${countdown}s)`}</span>
+                    <span className="w-2 h-2 rounded-full bg-[#EAB308] animate-ping" />
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </>
+                ) : (
+                  <>
+                    <span>{user ? "Open Dashboard" : "Start Free"}</span>
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </>
+                )}
+              </Link>
 
-            <Link
-              href="#live-lab"
-              className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-[#121218] border border-[#272732] text-slate-200 text-sm font-bold hover:bg-[#1A1A22] hover:border-[#A855F7]/40 hover:text-white transition-all flex items-center justify-center gap-2"
-            >
-              <span>See it in action</span>
-            </Link>
+              <Link
+                href="#live-lab"
+                onClick={() => setRedirectCancelled(true)}
+                className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-[#121218] border border-[#272732] text-slate-200 text-sm font-bold hover:bg-[#1A1A22] hover:border-[#A855F7]/40 hover:text-white transition-all flex items-center justify-center gap-2"
+              >
+                <span>See it in action</span>
+              </Link>
+            </div>
+
+            {/* Auto-redirect status pill */}
+            {!redirectCancelled && countdown > 0 && (
+              <button
+                onClick={() => setRedirectCancelled(true)}
+                className="text-[11px] text-[#9090A0] hover:text-[#EAB308] transition-colors py-1 px-3 rounded-full hover:bg-white/5 flex items-center gap-1.5"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-[#EAB308] animate-pulse" />
+                <span>Redirecting in {countdown}s • Click to stay here</span>
+              </button>
+            )}
           </div>
         </div>
       </section>

@@ -110,19 +110,19 @@ export default function LandingPage() {
     };
     window.addEventListener("scroll", handleScrollCancel, { passive: true });
 
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          router.push(user ? "/dashboard" : "/login");
-          return 0;
-        }
-        return prev - 1;
-      });
+    // Decrement countdown visually
+    const countdownInterval = setInterval(() => {
+      setCountdown((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
 
+    // Trigger router.push as an independent timer side-effect (NEVER inside setState)
+    const redirectTimer = setTimeout(() => {
+      router.push(user ? "/dashboard" : "/login");
+    }, 3000);
+
     return () => {
-      clearInterval(timer);
+      clearTimeout(redirectTimer);
+      clearInterval(countdownInterval);
       window.removeEventListener("scroll", handleScrollCancel);
     };
   }, [user, router, redirectCancelled]);

@@ -95,7 +95,7 @@ export default function SettingsPage() {
           </div>
           <div className="flex justify-between py-1.5 border-b border-stone-100 dark:border-[#272732]">
             <span className="text-slate-500 dark:text-[#9090A0]">Release Version</span>
-            <span className="font-bold text-[#7C3AED]">HabitFlow 5.0 (Royal Amethyst & Gilded Gold)</span>
+            <span className="font-bold text-[#7C3AED]">Ritualis 5.0 (Royal Amethyst & Gilded Gold)</span>
           </div>
           <div className="flex justify-between py-1.5 border-b border-stone-100 dark:border-[#272732]">
             <span className="text-slate-500 dark:text-[#9090A0]">Engine</span>

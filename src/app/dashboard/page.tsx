@@ -6,6 +6,9 @@ import { useEffect, useMemo, useState } from "react";
 import TopNav from "@/components/TopNav";
 import AddHabitModal from "@/components/AddHabitModal";
 import HabitTemplateModal from "@/components/HabitTemplateModal";
+import HabitNoteModal from "@/components/HabitNoteModal";
+import StreakShareModal from "@/components/StreakShareModal";
+import WeeklyReviewModal from "@/components/WeeklyReviewModal";
 import {
   collection,
   doc,
@@ -16,6 +19,8 @@ import {
   setDoc,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { soundFX } from "@/lib/soundEffects";
+import { triggerConfetti } from "@/lib/confetti";
 import Link from "next/link";
 import {
   Plus,
@@ -28,14 +33,40 @@ import {
   List,
   Layers,
   SlidersHorizontal,
+  Sun,
+  Sunset,
+  Moon,
+  Clock,
+  Shield,
+  FileText,
+  Share2,
+  Trophy,
+  Minus,
+  CheckCheck,
+  ShieldAlert,
 } from "lucide-react";
 
 /* ------------------ Types ------------------ */
+type HabitType = "boolean" | "numeric" | "negative";
+type TimeOfDay = "anytime" | "morning" | "afternoon" | "evening";
+
 type Habit = {
   id: string;
   name: string;
   color: string;
   category?: string;
+  habitType?: HabitType;
+  targetValue?: number;
+  unit?: string;
+  costPerDay?: number;
+  timeOfDay?: TimeOfDay;
+};
+
+type LogDetail = {
+  completed: boolean;
+  value?: number;
+  note?: string;
+  isFrozen?: boolean;
 };
 
 type HabitLogMap = {
@@ -84,16 +115,30 @@ export default function DashboardPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
+  // Modals
   const [showAddHabit, setShowAddHabit] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [showWeeklyReview, setShowWeeklyReview] = useState(false);
+  const [activeNoteHabit, setActiveNoteHabit] = useState<{ id: string; name: string; note?: string } | null>(null);
+  const [activeShareHabit, setActiveShareHabit] = useState<{ name: string; streak: number } | null>(null);
+
+  // Data
   const [habits, setHabits] = useState<Habit[]>([]);
-  const [logs, setLogs] = useState<HabitLogMap>({});
+  const [completedLogs, setCompletedLogs] = useState<HabitLogMap>({});
+  const [frozenLogs, setFrozenLogs] = useState<HabitLogMap>({});
+  const [logDetails, setLogDetails] = useState<{ [key: string]: LogDetail }>({});
+
+  // Filters & Views
   const [view, setView] = useState<ViewMode>("week");
   const [layout, setLayout] = useState<LayoutMode>("grid");
+  const [activeRoutine, setActiveRoutine] = useState<"all" | TimeOfDay>("all");
   const [viewBaseDate, setViewBaseDate] = useState(getToday());
   const [selectedDate, setSelectedDate] = useState(getToday());
 
   const today = useMemo(getToday, []);
+
+  // Streak shields available (2 monthly grace shields)
+  const [availableShields, setAvailableShields] = useState(2);
 
   /* ------------------ Date range ------------------ */
   const dateRange = useMemo(() => {
@@ -157,75 +202,249 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!user) return;
     return onSnapshot(collection(db, "users", user.uid, "habitLogs"), (snap) => {
-      const map: HabitLogMap = {};
+      const cMap: HabitLogMap = {};
+      const fMap: HabitLogMap = {};
+      const dMap: { [key: string]: LogDetail } = {};
+
+      let usedFreezesCount = 0;
+
       snap.docs.forEach((d) => {
         const data = d.data();
-        if (!data.completed) return;
-        if (!map[data.habitId]) map[data.habitId] = new Set();
-        map[data.habitId].add(data.date);
+        const key = `${data.habitId}_${data.date}`;
+        dMap[key] = {
+          completed: !!data.completed,
+          value: data.value,
+          note: data.note,
+          isFrozen: !!data.isFrozen,
+        };
+
+        if (data.completed) {
+          if (!cMap[data.habitId]) cMap[data.habitId] = new Set();
+          cMap[data.habitId].add(data.date);
+        }
+
+        if (data.isFrozen) {
+          if (!fMap[data.habitId]) fMap[data.habitId] = new Set();
+          fMap[data.habitId].add(data.date);
+          usedFreezesCount++;
+        }
       });
-      setLogs(map);
+
+      setCompletedLogs(cMap);
+      setFrozenLogs(fMap);
+      setLogDetails(dMap);
+      setAvailableShields(Math.max(0, 2 - usedFreezesCount));
     });
   }, [user]);
 
   /* ------------------ Actions ------------------ */
+  // Toggle binary habit
   const toggleHabit = async (habitId: string, date: string, checked: boolean) => {
     if (!user) return;
+
+    if (checked) {
+      soundFX.playHabitComplete();
+    } else {
+      soundFX.playHabitUndo();
+    }
+
+    const key = `${habitId}_${date}`;
+    const prev = logDetails[key] || {};
+
     await setDoc(
-      doc(db, "users", user.uid, "habitLogs", `${habitId}_${date}`),
-      { habitId, date, completed: checked, createdAt: serverTimestamp() },
+      doc(db, "users", user.uid, "habitLogs", key),
+      {
+        habitId,
+        date,
+        completed: checked,
+        isFrozen: false, // Completing resets any freeze
+        value: checked ? (habits.find((h) => h.id === habitId)?.targetValue || 1) : 0,
+        note: prev.note || "",
+        createdAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+
+    // Check if this action completes all habits for today
+    if (checked) {
+      const willBeAllDone = habits.every((h) => {
+        if (h.id === habitId) return true;
+        return completedLogs[h.id]?.has(date);
+      });
+      if (willBeAllDone && habits.length > 0) {
+        soundFX.playVictoryFanfare();
+        triggerConfetti();
+      }
+    }
+  };
+
+  // Adjust numeric habit counter (+ / -)
+  const adjustCounter = async (habit: Habit, date: string, delta: number) => {
+    if (!user) return;
+    const target = habit.targetValue || 1;
+    const key = `${habit.id}_${date}`;
+    const prev = logDetails[key] || {};
+    const currentValue = prev.value !== undefined ? prev.value : prev.completed ? target : 0;
+    const newValue = Math.max(0, currentValue + delta);
+    const isNowCompleted = newValue >= target;
+
+    if (delta > 0) {
+      soundFX.playCounterTick(true);
+      if (isNowCompleted && !prev.completed) {
+        soundFX.playHabitComplete();
+      }
+    } else {
+      soundFX.playCounterTick(false);
+    }
+
+    await setDoc(
+      doc(db, "users", user.uid, "habitLogs", key),
+      {
+        habitId: habit.id,
+        date,
+        value: newValue,
+        completed: isNowCompleted,
+        isFrozen: false,
+        note: prev.note || "",
+        createdAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+
+    if (isNowCompleted && !prev.completed) {
+      const willBeAllDone = habits.every((h) => {
+        if (h.id === habit.id) return true;
+        return completedLogs[h.id]?.has(date);
+      });
+      if (willBeAllDone) {
+        soundFX.playVictoryFanfare();
+        triggerConfetti();
+      }
+    }
+  };
+
+  // Apply Streak Freeze Shield
+  const toggleStreakFreeze = async (habitId: string, date: string) => {
+    if (!user) return;
+    const key = `${habitId}_${date}`;
+    const prev = logDetails[key] || {};
+    const willFreeze = !prev.isFrozen;
+
+    if (willFreeze) {
+      soundFX.playStreakShield();
+    } else {
+      soundFX.playClick();
+    }
+
+    await setDoc(
+      doc(db, "users", user.uid, "habitLogs", key),
+      {
+        habitId,
+        date,
+        isFrozen: willFreeze,
+        completed: false,
+        note: prev.note || "",
+        createdAt: serverTimestamp(),
+      },
       { merge: true }
     );
   };
 
+  // One-click Complete Routine for current window
+  const completeCurrentRoutine = async () => {
+    if (!user) return;
+    const habitsToComplete = filteredHabits.filter(
+      (h) => !completedLogs[h.id]?.has(selectedDate)
+    );
+
+    if (habitsToComplete.length === 0) return;
+
+    soundFX.playVictoryFanfare();
+    triggerConfetti();
+
+    for (const h of habitsToComplete) {
+      const key = `${h.id}_${selectedDate}`;
+      const prev = logDetails[key] || {};
+      await setDoc(
+        doc(db, "users", user.uid, "habitLogs", key),
+        {
+          habitId: h.id,
+          date: selectedDate,
+          completed: true,
+          isFrozen: false,
+          value: h.targetValue || 1,
+          note: prev.note || "",
+          createdAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+    }
+  };
+
+  // Streak calculation with Streak Shield awareness
   const getStreak = (habitId: string, asOfDate: string) => {
-    const set = logs[habitId];
-    if (!set) return 0;
+    const cSet = completedLogs[habitId];
+    const fSet = frozenLogs[habitId];
+    if (!cSet && !fSet) return 0;
+
     let streak = 0;
     let cursor = asOfDate;
-    if (!set.has(cursor)) {
+
+    const isSatisfied = (d: string) => (cSet?.has(d) || fSet?.has(d));
+
+    if (!isSatisfied(cursor)) {
       const yesterday = addDays(cursor, -1);
-      if (set.has(yesterday)) {
+      if (isSatisfied(yesterday)) {
         cursor = yesterday;
       } else {
         return 0;
       }
     }
-    while (set.has(cursor)) {
+
+    while (isSatisfied(cursor)) {
       streak++;
       cursor = addDays(cursor, -1);
     }
     return streak;
   };
 
-  if (loading || !user) return null;
+  /* ------------------ Filtering & Computations ------------------ */
+  const filteredHabits = useMemo(() => {
+    if (activeRoutine === "all") return habits;
+    return habits.filter(
+      (h) => h.timeOfDay === activeRoutine || (!h.timeOfDay && activeRoutine === "anytime")
+    );
+  }, [habits, activeRoutine]);
 
-  /* ------------------ Computations ------------------ */
   const totalPossible = habits.length * dateRange.length;
-  const totalCompleted = Object.values(logs).reduce(
-    (sum, s) => sum + [...s].filter((d) => dateRange.includes(d)).length, 0
+  const totalCompleted = Object.values(completedLogs).reduce(
+    (sum, s) => sum + [...s].filter((d) => dateRange.includes(d)).length,
+    0
   );
   const progressPercent = totalPossible === 0 ? 0 : Math.round((totalCompleted / totalPossible) * 100);
 
   const previousWeekRange = dateRange.map((d) => addDays(d, -7));
-  const previousCompleted = Object.values(logs).reduce(
-    (sum, s) => sum + [...s].filter((d) => previousWeekRange.includes(d)).length, 0
+  const previousCompleted = Object.values(completedLogs).reduce(
+    (sum, s) => sum + [...s].filter((d) => previousWeekRange.includes(d)).length,
+    0
   );
   const previousPossible = habits.length * 7;
   const previousPercent = previousPossible === 0 ? 0 : Math.round((previousCompleted / previousPossible) * 100);
   const delta = progressPercent - previousPercent;
-  const comparisonText = delta > 0 ? `+${delta}%` : delta < 0 ? `${delta}%` : 'Even';
+  const comparisonText = delta > 0 ? `+${delta}%` : delta < 0 ? `${delta}%` : "Even";
 
-  const todayCompletedCount = habits.filter((h) => logs[h.id]?.has(selectedDate)).length;
+  const todayCompletedCount = habits.filter((h) => completedLogs[h.id]?.has(selectedDate)).length;
   const todayProgressRate = habits.length === 0 ? 0 : todayCompletedCount / habits.length;
 
+  if (loading || !user) return null;
+
   return (
-    <div className="min-h-screen bg-[#F9F9FB] dark:bg-[#0B0B0F] text-stone-900 dark:text-stone-100 font-sans selection:bg-violet-500/25 overflow-x-hidden">
+    <div className="min-h-screen bg-[#F9F9FB] dark:bg-[#0B0B0F] text-stone-900 dark:text-stone-100 font-sans selection:bg-[#7C3AED]/25 overflow-x-hidden">
       <TopNav />
 
-      {/* Main Container */}
-      <main className="pt-16 sm:pt-20 lg:pt-22 pb-32 lg:pb-16 px-3.5 sm:px-6 lg:px-8 max-w-[1540px] mx-auto space-y-4 sm:space-y-6">
-
+      {/* Main Container - Optimized for Phone, Laptop, and TV */}
+      <main className="pt-16 sm:pt-20 lg:pt-22 pb-32 lg:pb-16 px-3.5 sm:px-6 lg:px-8 max-w-[1680px] mx-auto space-y-4 sm:space-y-6">
+        
         {/* ==================== WELCOME BANNER ==================== */}
         <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/80 dark:bg-[#121218]/80 p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-stone-200/80 dark:border-[#272732] backdrop-blur-xl shadow-xs">
           <div className="space-y-1">
@@ -238,25 +457,37 @@ export default function DashboardPage() {
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight font-heading">
-              Welcome, <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#7C3AED] to-[#EAB308]">{user.displayName || user.email?.split("@")[0]}</span>
+              Welcome,{" "}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#7C3AED] via-[#A855F7] to-[#EAB308]">
+                {user.displayName || user.email?.split("@")[0]}
+              </span>
             </h1>
             <p className="text-stone-500 dark:text-[#9090A0] text-xs sm:text-sm font-medium">
               {view === "week" && `Week of ${formatDate(dateRange[0])} — ${formatDate(dateRange[dateRange.length - 1])}`}
               {view === "month" && new Date(dateRange[0] + "T00:00:00").toLocaleDateString("en-US", { month: "long", year: "numeric" })}
               {view === "year" && `Year ${new Date(dateRange[0] + "T00:00:00").getFullYear()}`}
-              {view === "allTime" && "All-Time Habit Records (Last 90 days)"}
+              {view === "allTime" && "All-Time Practice Records (Last 90 days)"}
             </p>
           </div>
 
           {/* Top Quick Actions */}
           <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+            <button
+              onClick={() => setShowWeeklyReview(true)}
+              className="flex items-center gap-1.5 px-3.5 py-2.5 bg-violet-500/10 hover:bg-violet-500/20 text-[#7C3AED] dark:text-[#C084FC] border border-violet-500/25 rounded-xl font-bold text-xs sm:text-sm transition-all active:scale-95 shadow-xs"
+            >
+              <Trophy className="w-4 h-4 text-[#EAB308]" />
+              <span>Scorecard</span>
+            </button>
+
             <Link
               href="/habits"
               className="flex items-center gap-1.5 px-3.5 py-2.5 bg-stone-100 dark:bg-[#1A1A22] text-stone-700 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-[#272732] border border-stone-200 dark:border-[#272732] rounded-xl font-bold text-xs sm:text-sm transition-all active:scale-95 shadow-xs"
             >
               <SlidersHorizontal className="w-4 h-4 text-[#7C3AED] dark:text-[#EAB308]" />
-              <span>Manage Habits</span>
+              <span>Manage Rituals</span>
             </Link>
+
             <button
               onClick={() => setShowTemplates(true)}
               className="flex items-center gap-1.5 px-3.5 py-2.5 bg-stone-100 dark:bg-[#1A1A22] text-stone-700 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-[#272732] border border-stone-200 dark:border-[#272732] rounded-xl font-bold text-xs sm:text-sm transition-all active:scale-95 shadow-xs"
@@ -264,12 +495,13 @@ export default function DashboardPage() {
               <Layers className="w-4 h-4 text-[#EAB308]" />
               <span>Templates</span>
             </button>
+
             <button
               onClick={() => setShowAddHabit(true)}
               className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-[#7C3AED] to-[#6D28D9] hover:opacity-95 text-white rounded-xl font-bold text-xs sm:text-sm shadow-sm shadow-violet-500/25 transition-all active:scale-95"
             >
               <Plus className="w-4 h-4" />
-              <span>New Habit</span>
+              <span>New Ritual</span>
             </button>
           </div>
         </header>
@@ -277,11 +509,11 @@ export default function DashboardPage() {
         {/* Motivational Card */}
         {(() => {
           const QUOTES = [
-            { text: "We are what we repeatedly do. Excellence, then, is not an act, but a habit.", author: "Aristotle" },
-            { text: "Success is the sum of small efforts, repeated day in and day out.", author: "Robert Collier" },
+            { text: "We are what we repeatedly do. Excellence, then, is not an act, but a ritual.", author: "Will Durant" },
+            { text: "Small disciplines repeated with consistency every day lead to great achievements.", author: "John C. Maxwell" },
             { text: "You do not rise to the level of your goals. You fall to the level of your systems.", author: "James Clear" },
             { text: "Discipline is choosing between what you want now and what you want most.", author: "Abraham Lincoln" },
-            { text: "A journey of a thousand miles begins with a single step.", author: "Lao Tzu" },
+            { text: "A sacred routine is an anchor in a chaotic sea.", author: "Marcus Aurelius" },
           ];
           const dayIndex = Math.floor(Date.now() / 86400000) % QUOTES.length;
           const q = QUOTES[dayIndex];
@@ -302,31 +534,33 @@ export default function DashboardPage() {
 
         {/* ==================== TWO-COLUMN LAYOUT ==================== */}
         <div className="flex flex-col lg:flex-row gap-5 lg:gap-6 items-start">
-
-          {/* LEFT SIDEBAR: Daily Focus */}
-          <div className="w-full lg:w-[350px] xl:w-[380px] flex-shrink-0 lg:sticky lg:top-22 order-1 lg:order-none space-y-4">
-            <div className="bg-white dark:bg-[#121218] border border-stone-200/80 dark:border-[#272732] rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-xs">
+          
+          {/* LEFT SIDEBAR: Daily Focus & Routine Stacking */}
+          <div className="w-full lg:w-[360px] xl:w-[400px] flex-shrink-0 lg:sticky lg:top-22 order-1 lg:order-none space-y-4">
+            <div className="bg-white dark:bg-[#121218] border border-stone-200/80 dark:border-[#272732] rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xs">
               
               {/* Day Selector */}
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center justify-between mb-4">
                 <div>
                   <h2 className="text-xl sm:text-2xl font-black font-heading">
                     {selectedDate === today ? "Today" : formatDate(selectedDate)}
                   </h2>
                   <p className="text-xs font-semibold text-stone-500 dark:text-[#9090A0] mt-0.5">
-                    {todayCompletedCount} of {habits.length} completed
+                    {todayCompletedCount} of {habits.length} rituals fulfilled
                   </p>
                 </div>
                 <div className="flex gap-1 bg-stone-100 dark:bg-[#1A1A22] p-1 rounded-xl">
                   <button
                     onClick={() => navigateDay(-1)}
                     className="p-1.5 hover:bg-white dark:hover:bg-[#272732] rounded-lg transition-all active:scale-95 text-stone-600 dark:text-stone-300"
+                    title="Previous day"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => navigateDay(1)}
                     className="p-1.5 hover:bg-white dark:hover:bg-[#272732] rounded-lg transition-all active:scale-95 text-stone-600 dark:text-stone-300"
+                    title="Next day"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
@@ -335,7 +569,7 @@ export default function DashboardPage() {
 
               {/* Circular Gauge */}
               {habits.length > 0 && (
-                <div className="flex items-center justify-center mb-6">
+                <div className="flex items-center justify-center mb-5">
                   <div className="relative w-36 h-36 sm:w-40 sm:h-40">
                     <svg className="transform -rotate-90 w-full h-full">
                       <circle
@@ -345,15 +579,16 @@ export default function DashboardPage() {
                       />
                       <circle
                         cx="50%" cy="50%" r="42%"
-                        stroke="url(#amethystGoldGradient)" strokeWidth="8%" fill="transparent"
+                        stroke="url(#ritualisGoldGradient)" strokeWidth="8%" fill="transparent"
                         strokeDasharray="264%"
                         strokeDashoffset={`${264 - (264 * todayProgressRate)}%`}
                         className="transition-all duration-700 ease-out"
                         strokeLinecap="round"
                       />
                       <defs>
-                        <linearGradient id="amethystGoldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <linearGradient id="ritualisGoldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                           <stop offset="0%" stopColor="#7C3AED" />
+                          <stop offset="60%" stopColor="#A855F7" />
                           <stop offset="100%" stopColor="#EAB308" />
                         </linearGradient>
                       </defs>
@@ -363,69 +598,237 @@ export default function DashboardPage() {
                         {Math.round(todayProgressRate * 100)}%
                       </span>
                       <span className="text-[10px] font-bold text-stone-400 dark:text-[#9090A0] uppercase tracking-widest mt-0.5">
-                        Completed
+                        Fulfilled
                       </span>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Habit Checklist */}
-              <div className="space-y-2.5">
-                {habits.length === 0 ? (
+              {/* ROUTINE STACKING TABS (Morning / Afternoon / Evening) */}
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-stone-400 dark:text-[#9090A0]">
+                    Routine Stacking
+                  </span>
+                  {filteredHabits.some((h) => !completedLogs[h.id]?.has(selectedDate)) && (
+                    <button
+                      onClick={completeCurrentRoutine}
+                      className="text-[10px] font-bold text-[#7C3AED] dark:text-[#EAB308] hover:underline flex items-center gap-1"
+                    >
+                      <CheckCheck className="w-3 h-3" />
+                      Complete Block
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-4 gap-1 p-1 bg-stone-100 dark:bg-[#1A1A22] rounded-xl">
+                  {[
+                    { id: "all", label: "All", icon: Clock },
+                    { id: "morning", label: "Morning", icon: Sun },
+                    { id: "afternoon", label: "Noon", icon: Sunset },
+                    { id: "evening", label: "Night", icon: Moon },
+                  ].map((tab) => {
+                    const Icon = tab.icon;
+                    const active = activeRoutine === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveRoutine(tab.id as any)}
+                        className={`py-1.5 px-1 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition-all ${
+                          active
+                            ? "bg-white dark:bg-[#121218] text-[#7C3AED] dark:text-[#EAB308] shadow-xs"
+                            : "text-stone-500 dark:text-[#9090A0] hover:text-stone-800"
+                        }`}
+                      >
+                        <Icon className="w-3 h-3" />
+                        <span className="text-[11px] hidden sm:inline">{tab.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Ritual Checklist with Steppers & Notes */}
+              <div className="space-y-2.5 max-h-[460px] overflow-y-auto custom-scrollbar pr-0.5">
+                {filteredHabits.length === 0 ? (
                   <div className="text-center py-6 bg-stone-50 dark:bg-[#1A1A22]/40 rounded-2xl border border-dashed border-stone-200 dark:border-[#272732]">
-                    <p className="text-xs font-semibold text-stone-500 mb-2">No habits tracked yet</p>
+                    <p className="text-xs font-semibold text-stone-500 mb-2">No rituals in this routine window</p>
                     <button
                       onClick={() => setShowAddHabit(true)}
                       className="text-xs font-bold text-[#7C3AED] dark:text-[#EAB308] hover:underline"
                     >
-                      + Create your first habit
+                      + Forge a new ritual
                     </button>
                   </div>
                 ) : (
-                  habits.map((h) => {
-                    const done = logs[h.id]?.has(selectedDate);
+                  filteredHabits.map((h) => {
+                    const key = `${h.id}_${selectedDate}`;
+                    const detail = logDetails[key] || {};
+                    const done = completedLogs[h.id]?.has(selectedDate);
+                    const isFrozen = frozenLogs[h.id]?.has(selectedDate);
                     const streak = getStreak(h.id, selectedDate);
+                    const isNumeric = h.habitType === "numeric";
+                    const isNegative = h.habitType === "negative";
+                    const target = h.targetValue || 1;
+                    const currentVal = detail.value !== undefined ? detail.value : done ? target : 0;
+                    const hasNote = !!detail.note;
 
                     return (
                       <div
                         key={h.id}
-                        onClick={() => toggleHabit(h.id, selectedDate, !done)}
-                        className={`group relative flex items-center justify-between p-3.5 rounded-xl cursor-pointer transition-all duration-200 border select-none ${
+                        className={`group relative rounded-xl transition-all duration-200 border select-none p-3 ${
                           done
                             ? "bg-[#EAB308]/10 border-[#EAB308]/30 dark:border-[#EAB308]/25 shadow-xs"
+                            : isFrozen
+                            ? "bg-violet-500/10 border-[#7C3AED]/30"
                             : "bg-white dark:bg-[#121218] border-stone-100 dark:border-[#272732]/80 hover:border-stone-300 dark:hover:border-stone-700"
                         }`}
                       >
                         {done && (
-                          <div
-                            className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-6 rounded-r-full bg-[#EAB308]"
-                          />
+                          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-6 rounded-r-full bg-[#EAB308]" />
                         )}
-                        <div className="flex items-center gap-3 pl-1">
+                        {isFrozen && (
+                          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-6 rounded-r-full bg-[#7C3AED]" />
+                        )}
+
+                        <div className="flex items-center justify-between gap-2">
+                          {/* Habit Info & Checkbox */}
                           <div
-                            className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all ${
-                              done
-                                ? "bg-[#EAB308] text-slate-950 font-black shadow-xs"
-                                : "border-2 border-stone-300 dark:border-stone-600 group-hover:border-stone-400"
-                            }`}
+                            onClick={() => !isNumeric && toggleHabit(h.id, selectedDate, !done)}
+                            className={`flex items-center gap-2.5 flex-1 min-w-0 ${!isNumeric ? "cursor-pointer" : ""}`}
                           >
-                            <Check className={`w-3.5 h-3.5 transition-transform ${done ? 'scale-100' : 'scale-0'}`} />
-                          </div>
-                          <div>
-                            <p className={`font-bold text-xs sm:text-sm ${done ? 'text-stone-900 dark:text-stone-100' : 'text-stone-700 dark:text-stone-300'}`}>
-                              {h.name}
-                            </p>
-                            {streak > 0 && (
-                              <div className="flex items-center gap-1 mt-0.5">
-                                <span className="text-[10px] font-bold text-[#EAB308] flex items-center gap-0.5">
-                                  <Flame className="w-3 h-3 fill-[#EAB308] text-[#EAB308]" />
-                                  {streak}d streak
-                                </span>
+                            {!isNumeric && (
+                              <div
+                                className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all flex-shrink-0 ${
+                                  done
+                                    ? "bg-[#EAB308] text-slate-950 font-black shadow-xs"
+                                    : "border-2 border-stone-300 dark:border-stone-600 group-hover:border-stone-400"
+                                }`}
+                              >
+                                <Check className={`w-3.5 h-3.5 transition-transform ${done ? "scale-100" : "scale-0"}`} />
                               </div>
+                            )}
+
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <p className={`font-bold text-xs sm:text-sm truncate ${done ? "text-stone-900 dark:text-stone-100" : "text-stone-700 dark:text-stone-300"}`}>
+                                  {h.name}
+                                </p>
+                                {isNegative && (
+                                  <span className="text-[9px] font-bold text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded">
+                                    Quit
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                {streak > 0 && (
+                                  <span className="text-[10px] font-bold text-[#EAB308] flex items-center gap-0.5">
+                                    <Flame className="w-3 h-3 fill-[#EAB308] text-[#EAB308]" />
+                                    {streak}d streak
+                                  </span>
+                                )}
+                                {isFrozen && (
+                                  <span className="text-[10px] font-bold text-[#7C3AED] dark:text-[#C084FC] flex items-center gap-0.5">
+                                    <Shield className="w-3 h-3" />
+                                    Shielded
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Actions: Stepper (for numeric) & Action Icons */}
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            {/* Numeric Counter Steppers */}
+                            {isNumeric && (
+                              <div className="flex items-center gap-1 bg-stone-100 dark:bg-[#1A1A22] rounded-lg p-0.5 border border-stone-200 dark:border-[#272732]">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    adjustCounter(h, selectedDate, -1);
+                                  }}
+                                  className="w-6 h-6 rounded-md hover:bg-white dark:hover:bg-[#272732] flex items-center justify-center text-stone-600 dark:text-stone-300 active:scale-90 transition-all"
+                                  title="Subtract"
+                                >
+                                  <Minus className="w-3 h-3" />
+                                </button>
+                                <span className="text-xs font-black min-w-[32px] text-center text-[#7C3AED] dark:text-[#EAB308]">
+                                  {currentVal}/{target}
+                                </span>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    adjustCounter(h, selectedDate, 1);
+                                  }}
+                                  className="w-6 h-6 rounded-md bg-[#7C3AED] text-white hover:brightness-110 flex items-center justify-center active:scale-90 transition-all"
+                                  title="Add"
+                                >
+                                  <Plus className="w-3 h-3" />
+                                </button>
+                              </div>
+                            )}
+
+                            {/* Micro-Note Button */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveNoteHabit({ id: h.id, name: h.name, note: detail.note });
+                              }}
+                              className={`p-1.5 rounded-lg transition-colors ${
+                                hasNote
+                                  ? "text-[#EAB308] bg-amber-500/10 hover:bg-amber-500/20"
+                                  : "text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-[#1A1A22]"
+                              }`}
+                              title={hasNote ? `Note: "${detail.note}"` : "Add reflection"}
+                            >
+                              <FileText className="w-3.5 h-3.5" />
+                            </button>
+
+                            {/* Streak Freeze Shield Trigger (if not done) */}
+                            {!done && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleStreakFreeze(h.id, selectedDate);
+                                }}
+                                className={`p-1.5 rounded-lg transition-colors ${
+                                  isFrozen
+                                    ? "text-[#7C3AED] bg-violet-500/15"
+                                    : "text-stone-400 hover:text-[#7C3AED] hover:bg-stone-100 dark:hover:bg-[#1A1A22]"
+                                }`}
+                                title={isFrozen ? "Remove streak shield" : "Activate Streak Shield"}
+                              >
+                                <Shield className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+
+                            {/* Share Streak Modal Button */}
+                            {streak > 0 && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveShareHabit({ name: h.name, streak });
+                                }}
+                                className="p-1.5 rounded-lg text-stone-400 hover:text-[#EAB308] hover:bg-stone-100 dark:hover:bg-[#1A1A22] transition-colors"
+                                title="Share streak card"
+                              >
+                                <Share2 className="w-3.5 h-3.5" />
+                              </button>
                             )}
                           </div>
                         </div>
+
+                        {/* Numeric Progress Bar */}
+                        {isNumeric && (
+                          <div className="mt-2 w-full bg-stone-100 dark:bg-[#1A1A22] h-1.5 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-to-r from-[#7C3AED] to-[#EAB308] transition-all duration-300"
+                              style={{ width: `${Math.min(100, (currentVal / target) * 100)}%` }}
+                            />
+                          </div>
+                        )}
                       </div>
                     );
                   })
@@ -439,29 +842,29 @@ export default function DashboardPage() {
                 >
                   <div className="flex items-center gap-2">
                     <SlidersHorizontal className="w-3.5 h-3.5 text-[#7C3AED] dark:text-[#EAB308]" />
-                    <span>Manage All Habits</span>
+                    <span>Manage All Rituals</span>
                   </div>
                   <span className="text-[11px] text-[#7C3AED] dark:text-[#EAB308] group-hover:translate-x-0.5 transition-transform">
-                    {habits.length} routines →
+                    {habits.length} practices →
                   </span>
                 </Link>
               )}
             </div>
           </div>
 
-          {/* RIGHT MAIN AREA */}
+          {/* RIGHT MAIN AREA: Multi-Device Matrix & Metrics */}
           <div className="flex-1 order-2 lg:order-none min-w-0 space-y-4 sm:space-y-6 w-full">
-
+            
             {/* Micro-Stats Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <div className="bg-white dark:bg-[#121218] border border-stone-200/80 dark:border-[#272732] rounded-2xl p-4 shadow-xs flex flex-col justify-between">
-                <span className="text-xs font-bold text-stone-500 dark:text-[#9090A0] uppercase tracking-wider">Completion</span>
+                <span className="text-xs font-bold text-stone-500 dark:text-[#9090A0] uppercase tracking-wider">Consistency</span>
                 <div className="flex items-baseline gap-2 mt-2">
                   <span className="text-2xl sm:text-3xl font-black font-heading text-stone-900 dark:text-white">{progressPercent}%</span>
                   <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
                     delta >= 0
-                      ? 'bg-violet-50 dark:bg-[#7C3AED]/15 text-[#7C3AED] dark:text-[#EAB308]'
-                      : 'bg-stone-100 dark:bg-[#1A1A22] text-stone-500 dark:text-[#9090A0]'
+                      ? "bg-violet-50 dark:bg-[#7C3AED]/15 text-[#7C3AED] dark:text-[#EAB308]"
+                      : "bg-stone-100 dark:bg-[#1A1A22] text-stone-500 dark:text-[#9090A0]"
                   }`}>
                     {comparisonText}
                   </span>
@@ -469,25 +872,27 @@ export default function DashboardPage() {
               </div>
 
               <div className="bg-white dark:bg-[#121218] border border-stone-200/80 dark:border-[#272732] rounded-2xl p-4 shadow-xs flex flex-col justify-between">
-                <span className="text-xs font-bold text-stone-500 dark:text-[#9090A0] uppercase tracking-wider">Active Habits</span>
+                <span className="text-xs font-bold text-stone-500 dark:text-[#9090A0] uppercase tracking-wider">Active Rituals</span>
                 <span className="text-2xl sm:text-3xl font-black font-heading text-stone-900 dark:text-white mt-2">{habits.length}</span>
               </div>
 
               <div className="bg-white dark:bg-[#121218] border border-stone-200/80 dark:border-[#272732] rounded-2xl p-4 shadow-xs flex flex-col justify-between">
-                <span className="text-xs font-bold text-stone-500 dark:text-[#9090A0] uppercase tracking-wider">Done Today</span>
+                <span className="text-xs font-bold text-stone-500 dark:text-[#9090A0] uppercase tracking-wider">Streak Shields</span>
                 <div className="flex items-baseline gap-1 mt-2">
-                  <span className="text-2xl sm:text-3xl font-black font-heading text-[#7C3AED] dark:text-[#EAB308]">
-                    {habits.filter((h) => logs[h.id]?.has(today)).length}
+                  <span className="text-2xl sm:text-3xl font-black font-heading text-[#7C3AED] dark:text-[#C084FC]">
+                    {availableShields}
                   </span>
-                  <span className="text-xs font-bold text-stone-400">/{habits.length}</span>
+                  <span className="text-xs font-bold text-stone-400">/2 ready</span>
                 </div>
               </div>
 
               <div className="bg-gradient-to-br from-[#7C3AED] to-[#EAB308] rounded-2xl p-4 text-white shadow-xs flex flex-col justify-between">
-                <span className="text-xs font-bold text-purple-100 uppercase tracking-wider">Consistency</span>
+                <span className="text-xs font-bold text-purple-100 uppercase tracking-wider">Momentum</span>
                 <div className="flex items-center gap-1 mt-2">
                   <Flame className="w-5 h-5 text-yellow-200 fill-yellow-200" />
-                  <span className="text-lg sm:text-xl font-black font-heading leading-tight">Momentum High</span>
+                  <span className="text-lg sm:text-xl font-black font-heading leading-tight">
+                    {todayProgressRate >= 1 ? "100% Mastered" : todayProgressRate >= 0.5 ? "Flow Active" : "In Progress"}
+                  </span>
                 </div>
               </div>
             </div>
@@ -517,12 +922,14 @@ export default function DashboardPage() {
                   <button
                     onClick={() => navigateView(-1)}
                     className="p-1.5 hover:bg-white dark:hover:bg-[#272732] text-stone-600 dark:text-stone-300 rounded-lg transition-all active:scale-95"
+                    title="Previous view"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => navigateView(1)}
                     className="p-1.5 hover:bg-white dark:hover:bg-[#272732] text-stone-600 dark:text-stone-300 rounded-lg transition-all active:scale-95"
+                    title="Next view"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
@@ -534,6 +941,7 @@ export default function DashboardPage() {
                     className={`p-1.5 rounded-lg transition-all ${
                       layout === "grid" ? "bg-white dark:bg-[#1E1E28] text-[#7C3AED] dark:text-[#EAB308] shadow-xs" : "text-stone-400 hover:text-stone-700"
                     }`}
+                    title="Grid view"
                   >
                     <LayoutGrid className="w-4 h-4" />
                   </button>
@@ -542,6 +950,7 @@ export default function DashboardPage() {
                     className={`p-1.5 rounded-lg transition-all ${
                       layout === "list" ? "bg-white dark:bg-[#1E1E28] text-[#7C3AED] dark:text-[#EAB308] shadow-xs" : "text-stone-400 hover:text-stone-700"
                     }`}
+                    title="List view"
                   >
                     <List className="w-4 h-4" />
                   </button>
@@ -556,15 +965,15 @@ export default function DashboardPage() {
                   <div className="w-16 h-16 rounded-2xl bg-violet-500/10 text-[#7C3AED] dark:text-[#EAB308] flex items-center justify-center mx-auto mb-4 border border-violet-500/20">
                     <Sparkles className="w-8 h-8" />
                   </div>
-                  <h3 className="text-xl sm:text-2xl font-black font-heading mb-2">Build your daily system</h3>
+                  <h3 className="text-xl sm:text-2xl font-black font-heading mb-2">Forge your daily practice</h3>
                   <p className="text-stone-500 dark:text-[#9090A0] text-sm max-w-sm mx-auto mb-6">
-                    Add the habits you want to cultivate. Track your streaks and see consistency compound over time.
+                    Add the sacred rituals you wish to cultivate. Track your streaks and watch consistency compound over time.
                   </p>
                   <button
                     onClick={() => setShowAddHabit(true)}
                     className="px-6 py-3 bg-gradient-to-r from-[#7C3AED] to-[#6D28D9] hover:opacity-95 text-white rounded-xl font-bold text-sm shadow-md transition-all active:scale-95"
                   >
-                    Add Your First Habit
+                    Forge Your First Ritual
                   </button>
                 </div>
               ) : layout === "grid" ? (
@@ -582,10 +991,10 @@ export default function DashboardPage() {
                               return (
                                 <div key={d} className="flex-1 text-center">
                                   <div className={`py-1.5 px-2 rounded-xl transition-colors ${
-                                    isToday ? 'bg-violet-500/10 text-[#7C3AED] dark:text-[#EAB308] font-bold' : ''
+                                    isToday ? "bg-violet-500/10 text-[#7C3AED] dark:text-[#EAB308] font-bold" : ""
                                   }`}>
                                     <span className="text-[10px] uppercase font-bold text-stone-400 block">{getDayName(d)}</span>
-                                    <span className={`text-base sm:text-lg font-black font-heading ${isToday ? '' : 'text-stone-700 dark:text-stone-200'}`}>
+                                    <span className={`text-base sm:text-lg font-black font-heading ${isToday ? "" : "text-stone-700 dark:text-stone-200"}`}>
                                       {new Date(d + "T00:00:00").getDate()}
                                     </span>
                                   </div>
@@ -600,7 +1009,7 @@ export default function DashboardPage() {
                           {/* Rows */}
                           <div className="space-y-2.5">
                             {habits.map((h) => {
-                              const completedCount = dateRange.filter((d) => logs[h.id]?.has(d)).length;
+                              const completedCount = dateRange.filter((d) => completedLogs[h.id]?.has(d)).length;
                               const completionRate = Math.round((completedCount / dateRange.length) * 100);
 
                               return (
@@ -619,7 +1028,8 @@ export default function DashboardPage() {
                                   {/* Checkboxes */}
                                   <div className="flex-1 grid grid-cols-7 gap-2">
                                     {dateRange.map((d) => {
-                                      const done = logs[h.id]?.has(d);
+                                      const done = completedLogs[h.id]?.has(d);
+                                      const isFrozen = frozenLogs[h.id]?.has(d);
                                       const isToday = d === today;
                                       return (
                                         <button
@@ -628,11 +1038,15 @@ export default function DashboardPage() {
                                           className={`aspect-square rounded-xl flex items-center justify-center transition-all ${
                                             done
                                               ? "scale-102 shadow-xs text-white"
+                                              : isFrozen
+                                              ? "bg-violet-500/20 border border-[#7C3AED] text-[#7C3AED] dark:text-[#C084FC]"
                                               : "bg-white dark:bg-[#121218] border border-stone-200 dark:border-[#272732] hover:border-stone-400"
-                                          } ${isToday && !done ? "ring-2 ring-violet-500/20 border-[#7C3AED]" : ""}`}
+                                          } ${isToday && !done && !isFrozen ? "ring-2 ring-violet-500/20 border-[#7C3AED]" : ""}`}
                                           style={done ? { backgroundColor: h.color, borderColor: h.color } : {}}
+                                          title={isFrozen ? "Streak Shield Active" : done ? "Completed" : "Not yet done"}
                                         >
-                                          <Check className={`w-3.5 h-3.5 transition-transform ${done ? 'scale-100' : 'scale-0'}`} />
+                                          {done && <Check className="w-3.5 h-3.5 transition-transform scale-100" />}
+                                          {isFrozen && <Shield className="w-3.5 h-3.5" />}
                                         </button>
                                       );
                                     })}
@@ -655,7 +1069,7 @@ export default function DashboardPage() {
                   {view !== "week" && (
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                       {habits.map((h) => {
-                        const completedCount = dateRange.filter((d) => logs[h.id]?.has(d)).length;
+                        const completedCount = dateRange.filter((d) => completedLogs[h.id]?.has(d)).length;
                         const completionRate = Math.round((completedCount / dateRange.length) * 100);
 
                         return (
@@ -673,15 +1087,16 @@ export default function DashboardPage() {
 
                             <div className="flex flex-wrap gap-1.5 max-h-[160px] overflow-y-auto custom-scrollbar pr-1">
                               {dateRange.map((d) => {
-                                const done = logs[h.id]?.has(d);
+                                const done = completedLogs[h.id]?.has(d);
+                                const isFrozen = frozenLogs[h.id]?.has(d);
                                 return (
                                   <div
                                     key={d}
                                     className="w-3.5 h-3.5 rounded-[3px] transition-colors"
-                                    style={{ backgroundColor: done ? h.color : undefined }}
-                                    title={`${formatDate(d)}`}
+                                    style={{ backgroundColor: done ? h.color : isFrozen ? "#7C3AED" : undefined }}
+                                    title={`${formatDate(d)}${isFrozen ? " (Shielded)" : ""}`}
                                   >
-                                    {!done && <div className="w-full h-full bg-stone-100 dark:bg-[#1A1A22] rounded-[3px]" />}
+                                    {!done && !isFrozen && <div className="w-full h-full bg-stone-100 dark:bg-[#1A1A22] rounded-[3px]" />}
                                   </div>
                                 );
                               })}
@@ -696,7 +1111,7 @@ export default function DashboardPage() {
                 /* ---------- LIST VIEW ---------- */
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                   {habits.map((h) => {
-                    const completedCount = dateRange.filter((d) => logs[h.id]?.has(d)).length;
+                    const completedCount = dateRange.filter((d) => completedLogs[h.id]?.has(d)).length;
                     const completionRate = Math.round((completedCount / dateRange.length) * 100);
 
                     return (
@@ -731,12 +1146,48 @@ export default function DashboardPage() {
       <button
         onClick={() => setShowAddHabit(true)}
         className="sm:hidden fixed bottom-20 right-5 w-13 h-13 bg-gradient-to-r from-[#7C3AED] to-[#6D28D9] text-white rounded-full shadow-lg shadow-violet-500/35 flex items-center justify-center active:scale-90 transition-transform z-30"
+        title="Forge Ritual"
       >
         <Plus className="w-6 h-6" />
       </button>
 
+      {/* Modals */}
       {showAddHabit && <AddHabitModal onClose={() => setShowAddHabit(false)} />}
       {showTemplates && <HabitTemplateModal onClose={() => setShowTemplates(false)} />}
+      {showWeeklyReview && (
+        <WeeklyReviewModal
+          habits={habits}
+          logs={completedLogs}
+          weekDates={dateRange.slice(0, 7)}
+          streakFreezesAvailable={availableShields}
+          onClose={() => setShowWeeklyReview(false)}
+        />
+      )}
+      {activeNoteHabit && (
+        <HabitNoteModal
+          habitId={activeNoteHabit.id}
+          habitName={activeNoteHabit.name}
+          date={selectedDate}
+          initialNote={activeNoteHabit.note}
+          onClose={() => setActiveNoteHabit(null)}
+          onSaved={(note) => {
+            const key = `${activeNoteHabit.id}_${selectedDate}`;
+            setLogDetails((prev) => ({
+              ...prev,
+              [key]: { ...(prev[key] || { completed: false }), note },
+            }));
+          }}
+        />
+      )}
+      {activeShareHabit && (
+        <StreakShareModal
+          habitName={activeShareHabit.name}
+          streakCount={activeShareHabit.streak}
+          userName={user.displayName || user.email?.split("@")[0] || "Ritualist"}
+          completionRate={progressPercent}
+          onClose={() => setActiveShareHabit(null)}
+        />
+      )}
     </div>
   );
 }

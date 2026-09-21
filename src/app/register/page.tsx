@@ -11,7 +11,7 @@ import {
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { Flame, Lock, Mail, Eye, EyeOff, CheckCircle2, ArrowRight, ShieldCheck } from "lucide-react";
-import HabitFlowLogo from "@/components/HabitFlowLogo";
+import RitualisLogo from "@/components/RitualisLogo";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -88,7 +88,7 @@ export default function RegisterPage() {
 
         <div className="relative z-10 max-w-md text-center">
           <Link href="/" className="inline-block mb-6 hover:scale-105 transition-transform">
-            <HabitFlowLogo size="hero" animated={true} />
+            <RitualisLogo size="hero" animated={true} />
           </Link>
           <p className="text-[#9090A0] text-sm leading-relaxed mb-8 font-medium">
             Create your space for daily discipline, thoughtful reflections, and habit mastery. Free forever.
@@ -135,7 +135,7 @@ export default function RegisterPage() {
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
           <Link href="/" className="lg:hidden flex items-center justify-center mb-8">
-            <HabitFlowLogo size="sm" animated={true} />
+            <RitualisLogo size="sm" animated={true} />
           </Link>
 
           <div className="mb-6">

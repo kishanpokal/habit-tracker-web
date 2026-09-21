@@ -449,7 +449,7 @@ export default function AdvancedAnalyticsPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `habitflow-analytics-${new Date().toISOString().split("T")[0]}.csv`;
+    a.download = `ritualis-analytics-${new Date().toISOString().split("T")[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }, [logs, habits]);
@@ -461,7 +461,7 @@ export default function AdvancedAnalyticsPage() {
 
     pdf.setFontSize(20);
     pdf.setFont("helvetica", "bold");
-    pdf.text("HabitFlow Analytics Performance Report", w / 2, y, { align: "center" });
+    pdf.text("Ritualis Analytics Performance Report", w / 2, y, { align: "center" });
     y += 8;
     pdf.setFontSize(10);
     pdf.setFont("helvetica", "normal");
@@ -513,7 +513,7 @@ export default function AdvancedAnalyticsPage() {
       y += 6;
     });
 
-    pdf.save(`habitflow-analytics-${new Date().toISOString().split("T")[0]}.pdf`);
+    pdf.save(`ritualis-analytics-${new Date().toISOString().split("T")[0]}.pdf`);
   }, [stats, habitBreakdown]);
 
   if (!user || loading) {

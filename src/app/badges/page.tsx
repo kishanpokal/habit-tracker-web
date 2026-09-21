@@ -633,7 +633,7 @@ const BADGE_DEFINITIONS: BadgeDef[] = [
   {
     id: "early_adopter",
     name: "Early Pioneer",
-    desc: "Among the vanguard builders using HabitFlow",
+    desc: "Among the vanguard builders using Ritualis",
     icon: <Sparkles className="w-5 h-5" />,
     category: "Special",
     rarity: "rare",
@@ -712,7 +712,7 @@ const BADGE_DEFINITIONS: BadgeDef[] = [
   },
   {
     id: "habit_legend",
-    name: "HabitFlow Luminary",
+    name: "Ritualis Luminary",
     desc: "Earn 25+ badges to reach luminary prestige",
     icon: <Award className="w-5 h-5" />,
     category: "Special",

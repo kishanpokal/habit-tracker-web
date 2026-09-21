@@ -17,7 +17,7 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
-import HabitFlowLogo from "@/components/HabitFlowLogo";
+import RitualisLogo from "@/components/RitualisLogo";
 import LiveHabitLab from "@/components/landing/LiveHabitLab";
 import BentoTiltCard from "@/components/landing/BentoTiltCard";
 import { soundFX } from "@/lib/soundEffects";
@@ -341,7 +341,7 @@ export default function LandingPage() {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
           <Link href="/" className="transition-transform hover:scale-105 active:scale-95">
-            <HabitFlowLogo size="sm" animated={true} />
+            <RitualisLogo size="sm" animated={true} />
           </Link>
 
           <div className="flex items-center gap-3 sm:gap-4">
@@ -540,7 +540,7 @@ export default function LandingPage() {
 
         <div className="max-w-3xl mx-auto relative z-10 space-y-6">
           <div data-cta-logo className="inline-flex p-3 rounded-2xl bg-[#0B0B0F] border border-[#272732] shadow-2xl mb-2">
-            <HabitFlowLogo size="lg" showText={false} animated={true} />
+            <RitualisLogo size="lg" showText={false} animated={true} />
           </div>
 
           <h2 data-cta-heading className="text-4xl sm:text-6xl font-black font-heading tracking-tight leading-tight">
@@ -551,7 +551,7 @@ export default function LandingPage() {
           </h2>
 
           <p data-cta-sub className="text-sm sm:text-base text-[#9090A0] max-w-lg mx-auto font-medium">
-            Join thousands building better habits with HabitFlow. Free forever, no credit card.
+            Join thousands building sacred consistency with Ritualis. Free forever, no credit card.
           </p>
 
           <div data-cta-button className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -569,9 +569,9 @@ export default function LandingPage() {
       {/* ━━━━━ FOOTER ━━━━━ */}
       <footer className="relative py-12 px-4 border-t border-[#272732] bg-[#0B0B0F]/90 z-10 text-center text-xs text-[#9090A0] space-y-3">
         <div className="flex items-center justify-center">
-          <HabitFlowLogo size="xs" />
+          <RitualisLogo size="xs" />
         </div>
-        <p>© {new Date().getFullYear()} HabitFlow. Built for daily progress.</p>
+        <p>© {new Date().getFullYear()} Ritualis. Elevate every day.</p>
       </footer>
     </div>
   );

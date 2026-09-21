@@ -49,14 +49,14 @@ export default function HabitList() {
               <ArrowLeft className="w-4 h-4" />
             </button>
             <div>
-              <h1 className="text-xl sm:text-2xl font-black font-heading tracking-tight">Manage Habits</h1>
+              <h1 className="text-xl sm:text-2xl font-black font-heading tracking-tight">Manage Rituals</h1>
               <p className="text-xs text-slate-500 dark:text-[#9090A0]">
-                Edit parameters or remove completed routines
+                Configure parameters, targets, or remove practices
               </p>
             </div>
           </div>
           <span className="text-xs font-bold text-slate-400 dark:text-[#9090A0]">
-            {habits.length} {habits.length === 1 ? "habit" : "habits"}
+            {habits.length} {habits.length === 1 ? "ritual" : "rituals"}
           </span>
         </div>
 
@@ -71,7 +71,7 @@ export default function HabitList() {
         {loading && (
           <div className="flex flex-col items-center justify-center py-16">
             <div className="w-8 h-8 border-3 border-[#7C3AED]/20 border-t-[#7C3AED] rounded-full animate-spin mb-3" />
-            <p className="text-xs font-bold text-slate-400 dark:text-[#9090A0]">Loading habits...</p>
+            <p className="text-xs font-bold text-slate-400 dark:text-[#9090A0]">Loading rituals...</p>
           </div>
         )}
 
@@ -79,9 +79,9 @@ export default function HabitList() {
         {!loading && habits.length === 0 && (
           <div className="bg-white dark:bg-[#121218] rounded-3xl border border-stone-200/80 dark:border-[#272732] p-10 text-center shadow-xs">
             <Target className="w-10 h-10 mx-auto text-slate-300 dark:text-slate-600 mb-3" />
-            <h3 className="text-base font-bold text-slate-800 dark:text-slate-200 mb-1">No habits registered</h3>
+            <h3 className="text-base font-bold text-slate-800 dark:text-slate-200 mb-1">No rituals registered</h3>
             <p className="text-xs text-slate-400 dark:text-[#9090A0] max-w-xs mx-auto mb-4">
-              Return to your dashboard to create habits or pick from templates.
+              Return to your dashboard to forge rituals or pick from templates.
             </p>
             <button
               onClick={() => router.push("/dashboard")}
@@ -112,14 +112,32 @@ export default function HabitList() {
                     </div>
 
                     <div className="min-w-0">
-                      <h3 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white truncate">
-                        {habit.name}
-                      </h3>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white truncate">
+                          {habit.name}
+                        </h3>
+                        {habit.habitType === "numeric" && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-500/10 text-[#7C3AED] dark:text-[#C084FC] border border-violet-500/20">
+                            Target: {habit.targetValue} {habit.unit}
+                          </span>
+                        )}
+                        {habit.habitType === "negative" && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-[#EAB308] border border-amber-500/20">
+                            Quit Bad Habit
+                          </span>
+                        )}
+                      </div>
+
                       <div className="flex items-center gap-3 mt-1 flex-wrap text-[11px] text-slate-400 dark:text-[#9090A0] font-medium">
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
                           <strong className="text-slate-700 dark:text-slate-300">{habit.targetDays}</strong> days/wk
                         </span>
+                        {habit.timeOfDay && habit.timeOfDay !== "anytime" && (
+                          <span className="capitalize font-bold text-slate-600 dark:text-stone-300">
+                            • {habit.timeOfDay}
+                          </span>
+                        )}
                         {habit.category && (
                           <span className="flex items-center gap-1 text-[#EAB308] font-bold">
                             <Tag className="w-3 h-3" />

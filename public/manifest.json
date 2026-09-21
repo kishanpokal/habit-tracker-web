@@ -1,13 +1,19 @@
 {
-    "name": "HabitFlow",
-    "short_name": "HabitFlow",
-    "description": "Build better habits. Track streaks. Achieve your goals.",
+    "name": "Ritualis — Elevate Every Day",
+    "short_name": "Ritualis",
+    "description": "Elevate daily habits into sacred rituals. Track streaks and achieve self-mastery.",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#0B0B0F",
     "theme_color": "#7C3AED",
     "orientation": "any",
     "icons": [
+        {
+            "src": "/icon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        },
         {
             "src": "/icon-192.png",
             "sizes": "192x192",

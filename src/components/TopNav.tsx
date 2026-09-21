@@ -25,7 +25,7 @@ import {
   ListChecks,
   Sparkles,
 } from "lucide-react";
-import HabitFlowLogo from "@/components/HabitFlowLogo";
+import RitualisLogo from "@/components/RitualisLogo";
 
 export default function TopNav() {
   const pathname = usePathname();
@@ -92,7 +92,7 @@ export default function TopNav() {
           <div className="flex items-center justify-between h-14 sm:h-16 lg:h-18">
             {/* Brand Emblem */}
             <Link href="/dashboard" className="flex items-center group flex-shrink-0">
-              <HabitFlowLogo size="sm" animated={true} />
+              <RitualisLogo size="sm" animated={true} />
             </Link>
 
             {/* Desktop Navigation Links */}

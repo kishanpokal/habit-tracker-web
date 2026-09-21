@@ -1,8 +1,8 @@
 <div align="center">
 
-# 🎯 HabitFlow — Build Better Habits
+# 🎯 Ritualis — Elevate Every Day
 
-### A Full-Stack Habit Tracking Progressive Web App
+### An Elevated, Sacred Habit & Daily Practice Progressive Web App
 
 [![Next.js](https://img.shields.io/badge/Next.js-16.1-black?logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev/)
@@ -11,7 +11,7 @@
 [![TailwindCSS](https://img.shields.io/badge/Tailwind-v4-06B6D4?logo=tailwindcss)](https://tailwindcss.com/)
 [![PWA](https://img.shields.io/badge/PWA-Ready-5A0FC8?logo=pwa)](https://web.dev/progressive-web-apps/)
 
-**HabitFlow** is a professional-grade, full-stack habit tracking application designed to help users build consistency, track progress, and achieve their personal goals. Built with modern web technologies and a stunning glassmorphism UI.
+**Ritualis** is a professional-grade, full-stack habit and sacred routine tracking application designed to help users build unbreakable consistency, track daily rituals, and achieve personal self-mastery. Built with modern web technologies and a stunning Royal Amethyst & Gilded Gold glassmorphism UI.
 
 [Live Demo](#) · [Report Bug](https://github.com/kishanpokal/habit-tracker-web/issues) · [Request Feature](https://github.com/kishanpokal/habit-tracker-web/issues)
 

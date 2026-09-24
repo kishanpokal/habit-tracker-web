@@ -27,7 +27,7 @@ export const viewport: Viewport = {
   maximumScale: 5,
 };
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://ritualis.app";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://zenith-rituals.vercel.app";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

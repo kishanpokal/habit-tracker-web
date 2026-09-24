@@ -1,20 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   signInWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
   sendPasswordResetEmail,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { useAuth } from "@/context/AuthContext";
 import { Flame, Lock, Mail, Eye, EyeOff, CheckCircle2, ArrowRight, ShieldCheck, AlertCircle, Check } from "lucide-react";
 import RitualisLogo from "@/components/RitualisLogo";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -23,6 +27,25 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [successAnimation, setSuccessAnimation] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      router.replace("/dashboard");
+    }
+  }, [user, router]);
+
+  useEffect(() => {
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result?.user) {
+          setSuccessAnimation(true);
+          setTimeout(() => router.replace("/dashboard"), 900);
+        }
+      })
+      .catch((err) => {
+        console.error("Redirect login result error:", err);
+      });
+  }, [router]);
 
   const handleEmailLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -55,16 +78,30 @@ export default function LoginPage() {
       setError("");
       setInfo("");
       const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      if (!result.user.emailVerified) {
-        setError("Google account email is not verified");
-        setLoading(false);
-        return;
+      provider.setCustomParameters({ prompt: "select_account" });
+      try {
+        const result = await signInWithPopup(auth, provider);
+        if (!result.user.emailVerified) {
+          setError("Google account email is not verified");
+          setLoading(false);
+          return;
+        }
+        setSuccessAnimation(true);
+        setTimeout(() => router.push("/dashboard"), 900);
+      } catch (popupErr: any) {
+        if (popupErr.code === "auth/popup-blocked" || popupErr.code === "auth/cancelled-popup-request") {
+          setInfo("Pop-up was blocked by browser. Redirecting you to Google sign-in...");
+          await signInWithRedirect(auth, provider);
+          return;
+        }
+        throw popupErr;
       }
-      setSuccessAnimation(true);
-      setTimeout(() => router.push("/dashboard"), 900);
     } catch (err: any) {
-      setError(err.message || "Google sign-in failed");
+      if (err.code === "auth/popup-blocked") {
+        setError("Browser blocked the pop-up window. Please click 'Continue with Google' again or allow pop-ups in your browser's address bar.");
+      } else {
+        setError(err.message || "Google sign-in failed");
+      }
       setLoading(false);
     }
   };
@@ -149,9 +186,16 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <div className="mb-4 p-3 rounded-xl bg-violet-500/10 border border-violet-500/30 text-violet-400 text-xs font-semibold flex items-center gap-2">
+            <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-semibold flex items-center gap-2">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               <span>{error}</span>
+            </div>
+          )}
+
+          {info && (
+            <div className="mb-4 p-3 rounded-xl bg-violet-500/10 border border-violet-500/30 text-violet-300 text-xs font-semibold flex items-center gap-2">
+              <div className="w-3.5 h-3.5 border-2 border-violet-400 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+              <span>{info}</span>
             </div>
           )}
 

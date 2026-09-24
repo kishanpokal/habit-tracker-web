@@ -1,27 +1,50 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   createUserWithEmailAndPassword,
   sendEmailVerification,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { Flame, Lock, Mail, Eye, EyeOff, CheckCircle2, ArrowRight, ShieldCheck } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { Flame, Lock, Mail, Eye, EyeOff, CheckCircle2, ArrowRight, ShieldCheck, AlertCircle } from "lucide-react";
 import RitualisLogo from "@/components/RitualisLogo";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [successAnimation, setSuccessAnimation] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      router.replace("/dashboard");
+    }
+  }, [user, router]);
+
+  useEffect(() => {
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result?.user) {
+          router.replace("/dashboard");
+        }
+      })
+      .catch((err) => {
+        console.error("Redirect registration result error:", err);
+      });
+  }, [router]);
 
   const getPasswordStrength = () => {
     if (!password) return { text: "", color: "", width: "0%" };
@@ -68,11 +91,26 @@ export default function RegisterPage() {
     try {
       setLoading(true);
       setError("");
+      setInfo("");
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-      router.push("/dashboard");
+      provider.setCustomParameters({ prompt: "select_account" });
+      try {
+        await signInWithPopup(auth, provider);
+        router.push("/dashboard");
+      } catch (popupErr: any) {
+        if (popupErr.code === "auth/popup-blocked" || popupErr.code === "auth/cancelled-popup-request") {
+          setInfo("Pop-up was blocked by browser. Redirecting you to Google sign-in...");
+          await signInWithRedirect(auth, provider);
+          return;
+        }
+        throw popupErr;
+      }
     } catch (err: any) {
-      setError(err.message || "Google registration failed");
+      if (err.code === "auth/popup-blocked") {
+        setError("Browser blocked the pop-up window. Please click 'Sign up with Google' again or allow pop-ups in your browser's address bar.");
+      } else {
+        setError(err.message || "Google registration failed");
+      }
       setLoading(false);
     }
   };
@@ -148,9 +186,16 @@ export default function RegisterPage() {
           </div>
 
           {error && (
-            <div className="mb-4 p-3 rounded-xl bg-[#7C3AED]/10 border border-[#7C3AED]/30 text-[#A855F7] text-xs font-semibold flex items-center gap-2">
-              <span className="flex-shrink-0">⚠️</span>
+            <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-semibold flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
               <span>{error}</span>
+            </div>
+          )}
+
+          {info && (
+            <div className="mb-4 p-3 rounded-xl bg-violet-500/10 border border-violet-500/30 text-violet-300 text-xs font-semibold flex items-center gap-2">
+              <div className="w-3.5 h-3.5 border-2 border-violet-400 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+              <span>{info}</span>
             </div>
           )}
 

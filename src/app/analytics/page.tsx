@@ -28,7 +28,7 @@ import {
 
 /* ─── Types ─── */
 type Habit = { id: string; name: string; color?: string; category?: string };
-type HabitLog = { habitId: string; date: string; completed: boolean };
+type HabitLog = { habitId: string; date: string; completed: boolean; isFrozen?: boolean };
 type TimeRange = "7d" | "30d" | "90d" | "year" | "custom";
 
 /* ─── Utils ─── */
@@ -297,7 +297,7 @@ export default function AdvancedAnalyticsPage() {
     const possible = filteredHabits.length * rangeDays.length;
     const completed = filteredLogs.filter((l) => l.completed && rangeDays.includes(l.date)).length;
     const rate = possible === 0 ? 0 : Math.round((completed / possible) * 100);
-    const allDates = filteredLogs.filter((l) => l.completed).map((l) => l.date);
+    const allDates = filteredLogs.filter((l) => l.completed || l.isFrozen).map((l) => l.date);
 
     let perfectDays = 0;
     if (selectedHabitId === "all" && habits.length > 0) {
@@ -376,8 +376,8 @@ export default function AdvancedAnalyticsPage() {
         completed: done,
         percent: rangeDays.length > 0 ? Math.round((done / rangeDays.length) * 100) : 0,
         color: h.color || AMETHYST_GOLD_COLORS[idx % AMETHYST_GOLD_COLORS.length],
-        streak: calculateStreak(logs.filter((l) => l.habitId === h.id && l.completed).map((l) => l.date)),
-        bestStreak: calculateBestStreak(logs.filter((l) => l.habitId === h.id && l.completed).map((l) => l.date), rangeDays),
+        streak: calculateStreak(logs.filter((l) => l.habitId === h.id && (l.completed || l.isFrozen)).map((l) => l.date)),
+        bestStreak: calculateBestStreak(logs.filter((l) => l.habitId === h.id && (l.completed || l.isFrozen)).map((l) => l.date), rangeDays),
       };
     }).sort((a, b) => b.percent - a.percent);
   }, [habits, logs, rangeDays]);

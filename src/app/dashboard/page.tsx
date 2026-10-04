@@ -9,6 +9,7 @@ import HabitTemplateModal from "@/components/HabitTemplateModal";
 import HabitNoteModal from "@/components/HabitNoteModal";
 import StreakShareModal from "@/components/StreakShareModal";
 import WeeklyReviewModal from "@/components/WeeklyReviewModal";
+import { useToast } from "@/components/Toast";
 import {
   collection,
   doc,
@@ -93,6 +94,15 @@ const addDays = (dateStr: string, days: number) => {
   return getLocalDateString(d);
 };
 
+const getWeekDateRange = (dateStr: string) => {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const d = new Date(year, month - 1, day);
+  const dayOfWeek = d.getDay() || 7; // Monday = 1 ... Sunday = 7
+  d.setDate(d.getDate() - dayOfWeek + 1); // Move to Monday of that week
+  const mondayStr = getLocalDateString(d);
+  return Array.from({ length: 7 }).map((_, i) => addDays(mondayStr, i));
+};
+
 const formatDate = (date: string) => {
   const d = new Date(date + "T00:00:00");
   return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
@@ -113,6 +123,7 @@ const getTimeGreeting = () => {
 /* ------------------ Component ------------------ */
 export default function DashboardPage() {
   const { user, loading } = useAuth();
+  const { addToast } = useToast();
   const router = useRouter();
 
   // Modals
@@ -137,7 +148,7 @@ export default function DashboardPage() {
 
   const today = useMemo(getToday, []);
 
-  // Streak shields available (2 monthly grace shields)
+  // Streak shields available (2 weekly grace shields, resets every Monday)
   const [availableShields, setAvailableShields] = useState(2);
 
   /* ------------------ Date range ------------------ */
@@ -206,7 +217,8 @@ export default function DashboardPage() {
       const fMap: HabitLogMap = {};
       const dMap: { [key: string]: LogDetail } = {};
 
-      let usedFreezesCount = 0;
+      const currentWeekSet = new Set(getWeekDateRange(getToday()));
+      let usedFreezesThisWeek = 0;
 
       snap.docs.forEach((d) => {
         const data = d.data();
@@ -226,14 +238,16 @@ export default function DashboardPage() {
         if (data.isFrozen) {
           if (!fMap[data.habitId]) fMap[data.habitId] = new Set();
           fMap[data.habitId].add(data.date);
-          usedFreezesCount++;
+          if (currentWeekSet.has(data.date)) {
+            usedFreezesThisWeek++;
+          }
         }
       });
 
       setCompletedLogs(cMap);
       setFrozenLogs(fMap);
       setLogDetails(dMap);
-      setAvailableShields(Math.max(0, 2 - usedFreezesCount));
+      setAvailableShields(Math.max(0, 2 - usedFreezesThisWeek));
     });
   }, [user]);
 
@@ -331,9 +345,27 @@ export default function DashboardPage() {
     const willFreeze = !prev.isFrozen;
 
     if (willFreeze) {
+      const weekDates = new Set(getWeekDateRange(date));
+      let usedInWeek = 0;
+      Object.values(frozenLogs).forEach((dates) => {
+        dates.forEach((d) => {
+          if (weekDates.has(d)) usedInWeek++;
+        });
+      });
+
+      if (usedInWeek >= 2) {
+        addToast(
+          "warning",
+          "Weekly shield limit reached! You have 2 streak shields per week (resets every Monday)."
+        );
+        return;
+      }
+
       soundFX.playStreakShield();
+      addToast("info", "Streak shield activated! Streak protected.");
     } else {
       soundFX.playClick();
+      addToast("info", "Streak shield removed. Shield reclaimed.");
     }
 
     await setDoc(
@@ -877,12 +909,15 @@ export default function DashboardPage() {
               </div>
 
               <div className="bg-white dark:bg-[#121218] border border-stone-200/80 dark:border-[#272732] rounded-2xl p-4 shadow-xs flex flex-col justify-between">
-                <span className="text-xs font-bold text-stone-500 dark:text-[#9090A0] uppercase tracking-wider">Streak Shields</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-stone-500 dark:text-[#9090A0] uppercase tracking-wider">Streak Shields</span>
+                  <span className="text-[10px] font-bold text-[#7C3AED] dark:text-[#C084FC] bg-violet-500/10 px-1.5 py-0.5 rounded">Resets Mon</span>
+                </div>
                 <div className="flex items-baseline gap-1 mt-2">
                   <span className="text-2xl sm:text-3xl font-black font-heading text-[#7C3AED] dark:text-[#C084FC]">
                     {availableShields}
                   </span>
-                  <span className="text-xs font-bold text-stone-400">/2 ready</span>
+                  <span className="text-xs font-bold text-stone-400">/2 this week</span>
                 </div>
               </div>
 

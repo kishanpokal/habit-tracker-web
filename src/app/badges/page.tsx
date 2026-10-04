@@ -790,7 +790,11 @@ export default function BadgesPage() {
 
     habits.forEach((h) => {
       const habitDates = Array.from(
-        new Set(completedLogs.filter((l: any) => l.habitId === h.id).map((l: any) => l.date))
+        new Set(
+          logs
+            .filter((l: any) => l.habitId === h.id && (l.completed || l.isFrozen))
+            .map((l: any) => l.date)
+        )
       ).sort();
       if (habitDates.length === 0) return;
 

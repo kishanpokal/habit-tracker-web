@@ -164,12 +164,12 @@ export default function WeeklyReviewModal({
               <div>
                 <p className="text-xs font-bold text-stone-900 dark:text-white">Streak Shields Active</p>
                 <p className="text-[11px] text-stone-500 dark:text-[#9090A0]">
-                  {streakFreezesAvailable} freeze safeguard{streakFreezesAvailable === 1 ? "" : "s"} ready to protect momentum
+                  {streakFreezesAvailable} freeze safeguard{streakFreezesAvailable === 1 ? "" : "s"} ready this week (resets every Monday)
                 </p>
               </div>
             </div>
             <span className="text-sm font-black font-heading text-[#7C3AED] dark:text-[#EAB308]">
-              {streakFreezesAvailable} Left
+              {streakFreezesAvailable} / 2 Left
             </span>
           </div>
 
